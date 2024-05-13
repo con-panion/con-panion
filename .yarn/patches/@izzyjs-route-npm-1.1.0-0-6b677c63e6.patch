@@ -1,0 +1,33 @@
+diff --git a/build/providers/izzy_provider.js b/build/providers/izzy_provider.js
+index 9b6f5eb6af96a24d1c66c9d1351b50d1f4ad0595..7bff2533c2ad0cd4621952825b0748d7bf621715 100644
+--- a/build/providers/izzy_provider.js
++++ b/build/providers/izzy_provider.js
+@@ -12,8 +12,8 @@ export default class IzzyRouteProvider {
+     }
+     async ready() {
+         const router = await this.app.container.make('router');
+-        const routes = router.toJSON() || {};
+-        const domains = Object.keys(routes);
++        let routes = router.toJSON() || {};
++        let domains = Object.keys(routes);
+         let routesJSON = [];
+         for (let domain of domains) {
+             const domainRoutes = await Promise.all(routes[domain].map(serializeRoute));
+@@ -22,6 +22,17 @@ export default class IzzyRouteProvider {
+                 routes: domainRoutes,
+             });
+         }
++        if (routesJSON.length === 0) {
++            routes = router.routes.map((route) => 'route' in route ? route.route.toJSON() : route.toJSON());
++            domains = [...new Set(routes.map((route) => route.domain)).values()];
++            for (let domain of domains) {
++                const domainRoutes = routes.filter((route) => route.domain === domain);
++                routesJSON.push({
++                    domain,
++                    routes: await Promise.all(domainRoutes.map(serializeRoute)),
++                });
++            }
++        }
+         const exists = routesJSON.find((route) => route.domain === 'root');
+         if (exists) {
+             this.#registerSsrRoutes(exists.routes);

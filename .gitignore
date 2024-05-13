@@ -32,3 +32,6 @@ yarn-error.log
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+# Japa test traces
+tests/traces/*

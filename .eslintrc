@@ -61,6 +61,7 @@
 			},
 		],
 		"@typescript-eslint/require-await": "off",
+		"@typescript-eslint/no-misused-promises": "off",
 
 		"no-shadow": "off",
 		"@typescript-eslint/no-shadow": "error",
@@ -162,6 +163,7 @@
 		"unicorn/no-unused-properties": "error",
 		"unicorn/no-anonymous-default-export": "off",
 		"unicorn/filename-case": "off",
+		"unicorn/no-null": "off",
 
 		"react-hooks/exhaustive-deps": 0,
 

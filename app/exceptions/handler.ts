@@ -1,6 +1,7 @@
 import { ExceptionHandler, type HttpContext } from '@adonisjs/core/http';
 import app from '@adonisjs/core/services/app';
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http';
+import { errors as vineErrors, type SimpleErrorReporter } from '@vinejs/vine';
 
 export default class HttpExceptionHandler extends ExceptionHandler {
 	/**
@@ -30,6 +31,22 @@ export default class HttpExceptionHandler extends ExceptionHandler {
 	 * response to the client
 	 */
 	async handle(error: unknown, context: HttpContext) {
+		if (error instanceof vineErrors.E_VALIDATION_ERROR) {
+			const validatorErrors = error.messages as SimpleErrorReporter['errors'];
+			const schemaErrors: Record<string, string> = {};
+
+			for (const validatorError of validatorErrors) {
+				const { field, message } = validatorError;
+				const path = field;
+
+				if (!(path in schemaErrors)) {
+					schemaErrors[path] = message;
+				}
+			}
+
+			context.session.flashErrors(schemaErrors);
+		}
+
 		return super.handle(error, context);
 	}
 

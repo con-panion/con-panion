@@ -2,6 +2,7 @@ import '../css/app.css';
 
 import { resolvePageComponent } from '@adonisjs/inertia/helpers';
 import { createInertiaApp } from '@inertiajs/react';
+import { ThemeProvider } from 'next-themes';
 import { hydrateRoot } from 'react-dom/client';
 
 const appName = (import.meta.env.VITE_APP_NAME as string) || 'con-panion';
@@ -14,6 +15,11 @@ createInertiaApp({
 	resolve: (name) => resolvePageComponent(`../pages/${name}.tsx`, import.meta.glob('../pages/**/*.tsx')),
 
 	setup({ el, App, props }) {
-		hydrateRoot(el, <App {...props} />);
+		hydrateRoot(
+			el,
+			<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+				<App {...props} />
+			</ThemeProvider>,
+		);
 	},
 });

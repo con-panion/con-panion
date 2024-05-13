@@ -1,8 +1,19 @@
+import path from 'node:path';
+
+import { authBrowserClient } from '@adonisjs/auth/plugins/browser_client';
 import app from '@adonisjs/core/services/app';
 import testUtils from '@adonisjs/core/services/test_utils';
+import { inertiaApiClient } from '@adonisjs/inertia/plugins/api_client';
+import { sessionApiClient } from '@adonisjs/session/plugins/api_client';
+import { sessionBrowserClient } from '@adonisjs/session/plugins/browser_client';
+import { shieldApiClient } from '@adonisjs/shield/plugins/api_client';
+import { izzyRoutePlugin } from '@izzyjs/route/plugins/japa';
+import { apiClient } from '@japa/api-client';
 import { assert } from '@japa/assert';
+import { browserClient } from '@japa/browser-client';
 import { pluginAdonisJS } from '@japa/plugin-adonisjs';
 import type { Config } from '@japa/runner/types';
+import { snapshot } from '@japa/snapshot';
 
 /**
  * This file is imported by the "bin/test.ts" entrypoint file
@@ -12,7 +23,30 @@ import type { Config } from '@japa/runner/types';
  * Configure Japa plugins in the plugins array.
  * Learn more - https://japa.dev/docs/runner-config#plugins-optional
  */
-export const plugins: Config['plugins'] = [assert(), pluginAdonisJS(app)];
+export const plugins: Config['plugins'] = [
+	assert(),
+	izzyRoutePlugin(),
+	pluginAdonisJS(app),
+	apiClient(),
+	inertiaApiClient(app),
+	sessionApiClient(app),
+	shieldApiClient(),
+	browserClient({
+		runInSuites: ['browser'],
+		contextOptions: {
+			baseURL: 'http://localhost:3333',
+		},
+		tracing: {
+			enabled: false,
+			event: 'onError',
+			cleanOutputDirectory: true,
+			outputDirectory: path.join(import.meta.dirname, './traces'),
+		},
+	}),
+	sessionBrowserClient(app),
+	authBrowserClient(app),
+	snapshot(),
+];
 
 /**
  * Configure lifecycle function to run before and after all the
@@ -22,7 +56,7 @@ export const plugins: Config['plugins'] = [assert(), pluginAdonisJS(app)];
  * The teardown functions are executer after all the tests
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-	setup: [],
+	setup: [() => testUtils.db().truncate()],
 	teardown: [],
 };
 

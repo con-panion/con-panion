@@ -9,4 +9,10 @@
 
 import router from '@adonisjs/core/services/router';
 
-router.on('/').renderInertia('home');
+import { middleware } from './kernel.js';
+
+const RegisterController = () => import('#controllers/register-controller');
+
+router.on('/').renderInertia('home').as('home');
+router.get('/register', [RegisterController, 'render']).middleware(middleware.guest());
+router.post('/register', [RegisterController]).as('auth.register');
