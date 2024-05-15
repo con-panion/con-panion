@@ -28,3 +28,12 @@ export const registerSchema = (server: boolean) => {
 	);
 };
 export type RegisterSchema = Infer<ReturnType<typeof registerSchema>>;
+
+export const loginValidator = vine.compile(
+	vine.object({
+		email: vine.string().email().trim().normalizeEmail(),
+		password: vine.string().minLength(1),
+		rememberMe: vine.boolean().optional(),
+	}),
+);
+export type LoginSchema = Infer<typeof loginValidator>;

@@ -19,7 +19,7 @@ export default function Home() {
 				</Link>
 			) : (
 				<>
-					<Link href="#" className="underline">
+					<Link href={route('auth.login').url} className="underline">
 						Login
 					</Link>
 					<span> | </span>

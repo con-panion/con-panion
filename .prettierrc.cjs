@@ -31,6 +31,7 @@ module.exports = {
 		'^#providers/(.*)$',
 		'^#services/(.*)$',
 		'^#start/(.*)$',
+		'^#test-helpers/(.*)$',
 		'^#tests/(.*)$',
 		'^#types/(.*)$',
 		'^#validators/(.*)$',

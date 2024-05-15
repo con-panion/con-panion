@@ -1,3 +1,4 @@
+import { errors as authErrors } from '@adonisjs/auth';
 import { ExceptionHandler, type HttpContext } from '@adonisjs/core/http';
 import app from '@adonisjs/core/services/app';
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http';
@@ -45,6 +46,15 @@ export default class HttpExceptionHandler extends ExceptionHandler {
 			}
 
 			context.session.flashErrors(schemaErrors);
+		}
+
+		if (error instanceof authErrors.E_INVALID_CREDENTIALS) {
+			context.session.flash('notification', {
+				type: 'error',
+				message: error.message,
+			});
+
+			return super.handle(error, context);
 		}
 
 		return super.handle(error, context);

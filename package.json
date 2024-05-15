@@ -37,7 +37,8 @@
 		"#start/*": "./start/*.js",
 		"#config/*": "./config/*.js",
 		"#utils/*": "./utils/*.js",
-		"#types/*": "./types/*.js"
+		"#types/*": "./types/*.js",
+		"#test-helpers/*": "./test-helpers/*.js"
 	},
 	"devDependencies": {
 		"@adonisjs/assembler": "^7.5.1",
@@ -76,6 +77,7 @@
 		"playwright": "^1.44.0",
 		"prettier": "^3.2.5",
 		"prettier-plugin-tailwindcss": "^0.5.14",
+		"timekeeper": "^2.3.1",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.4.5",
 		"vite": "^5.2.10"
@@ -94,6 +96,7 @@
 		"@hookform/resolvers": "^3.3.4",
 		"@inertiajs/react": "^1.0.16",
 		"@izzyjs/route": "patch:@izzyjs/route@npm%3A1.1.0-0#~/.yarn/patches/@izzyjs-route-npm-1.1.0-0-6b677c63e6.patch",
+		"@radix-ui/react-checkbox": "^1.0.4",
 		"@radix-ui/react-label": "^2.0.2",
 		"@radix-ui/react-slot": "^1.0.2",
 		"@vinejs/vine": "patch:@vinejs/vine@npm%3A2.0.0#~/.yarn/patches/@vinejs-vine-npm-2.0.0-64e827c320.patch",

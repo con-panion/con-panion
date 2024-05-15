@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+import { authApiClient } from '@adonisjs/auth/plugins/api_client';
 import { authBrowserClient } from '@adonisjs/auth/plugins/browser_client';
 import app from '@adonisjs/core/services/app';
 import testUtils from '@adonisjs/core/services/test_utils';
@@ -31,6 +32,7 @@ export const plugins: Config['plugins'] = [
 	inertiaApiClient(app),
 	sessionApiClient(app),
 	shieldApiClient(),
+	authApiClient(app),
 	browserClient({
 		runInSuites: ['browser'],
 		contextOptions: {
