@@ -8,7 +8,7 @@
 		"plugin:@typescript-eslint/stylistic-type-checked",
 		"plugin:react/recommended",
 		"plugin:react-hooks/recommended",
-		"plugin:sonarjs/recommended",
+		"plugin:sonarjs/recommended-legacy",
 		"plugin:unicorn/recommended",
 		"plugin:import/errors",
 		"plugin:import/warnings",
