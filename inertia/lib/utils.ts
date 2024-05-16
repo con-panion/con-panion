@@ -10,32 +10,26 @@ export function cn(...inputs: ClassValue[]) {
 
 export function handleNotification(notification: NotificationFlash) {
 	if ('title' in notification) {
-		toast.message(notification.title, {
+		return toast.message(notification.title, {
 			description: notification.message,
 		});
-
-		return;
 	}
 
 	switch (notification.type) {
 		case NotificationType.Success: {
-			toast.success(notification.message);
-			break;
+			return toast.success(notification.message);
 		}
 
 		case NotificationType.Error: {
-			toast.error(notification.message);
-			break;
+			return toast.error(notification.message);
 		}
 
 		case NotificationType.Info: {
-			toast.info(notification.message);
-			break;
+			return toast.info(notification.message);
 		}
 
 		case NotificationType.Warning: {
-			toast.warning(notification.message);
-			break;
+			return toast.warning(notification.message);
 		}
 
 		default: {

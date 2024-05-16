@@ -1,21 +1,30 @@
 import { useEffect } from 'react';
 
 import { usePage } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 import type { NotificationFlash } from '#types/notification';
 
+import { useMounted } from '~/hooks/use-mounted';
 import { handleNotification } from '~/lib/utils';
 
 import { Toaster } from './ui/sonner';
 
 export function Notifications() {
 	const { notification } = usePage().props;
+	const mounted = useMounted();
 
 	useEffect(() => {
-		if (notification) {
-			handleNotification(notification as NotificationFlash);
+		if (!mounted || !notification) {
+			return;
 		}
-	}, [notification]);
+
+		const id = handleNotification(notification as NotificationFlash);
+
+		return () => {
+			toast.dismiss(id);
+		};
+	}, [notification, mounted]);
 
 	return <Toaster richColors closeButton />;
 }
