@@ -39,7 +39,7 @@ export const plugins: Config['plugins'] = [
 			baseURL: 'http://localhost:3333',
 		},
 		tracing: {
-			enabled: false,
+			enabled: true,
 			event: 'onError',
 			cleanOutputDirectory: true,
 			outputDirectory: path.join(import.meta.dirname, './traces'),

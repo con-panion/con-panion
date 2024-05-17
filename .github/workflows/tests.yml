@@ -1,0 +1,98 @@
+name: Tests
+on:
+  push:
+    branches:
+      - "*"
+    paths-ignore:
+      - "*.{md,txt}"
+      - LICENSE
+      - .*config
+    tags-ignore:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+    paths-ignore:
+      - "*.{md,txt}"
+      - LICENSE
+      - .*config
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test-mode: [functional, chromium, firefox, webkit]
+        include:
+          - port: 5430
+            test-mode: functional
+          - port: 5431
+            test-mode: chromium
+          - port: 5432
+            test-mode: firefox
+          - port: 5433
+            test-mode: webkit
+
+    env:
+      TZ: UTC
+      PORT: 3333
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+      APP_KEY: zKXHe-Ahdb7aPK1ylAJlRgTefktEaACi
+      NODE_ENV: development
+      SESSION_DRIVER: memory
+      DB_HOST: 0.0.0.0
+      DB_PORT: ${{ matrix.port }}
+      DB_USER: con-panion
+      DB_PASSWORD: con-panion
+      DB_DATABASE: con-panion
+
+    services:
+      postgres-${{ matrix.test-mode }}:
+        image: postgres
+
+        ports:
+          - '${{ matrix.port }}:5432'
+
+        env:
+          PGPASSWORD: con-panion
+          POSTGRES_DB: con-panion
+          POSTGRES_USER: con-panion
+          POSTGRES_PASSWORD: con-panion
+
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: ${{ matrix.test-mode != 'functional' && format('Install playwright {0} browser', matrix.test-mode) || 'Skipped' }}
+        if: ${{ matrix.test-mode != 'functional' }}
+        run: yarn playwright install --with-deps ${{ matrix.test-mode }}
+
+      - name: Run migrations
+        run: yarn ace migration:run
+
+      - name: Run tests
+        run: yarn test:${{ matrix.test-mode }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.test-mode != 'functional' && always() && hashFiles('tests/traces/browser/*.zip') != '' }}
+        with:
+          name: playwright-traces-${{ matrix.test-mode }}
+          path: tests/traces/browser/
+          retention-days: 30
