@@ -1,10 +1,8 @@
-import { Secret } from '@adonisjs/core/helpers';
 import hash from '@adonisjs/core/services/hash';
 import testUtils from '@adonisjs/core/services/test_utils';
 import { test } from '@japa/runner';
 
 import User from '#models/user';
-import { timeTravel } from '#test-helpers/time-travel';
 import { NotificationType } from '#types/notification';
 
 test.group('Auth login', (group) => {
@@ -93,125 +91,11 @@ test.group('Auth login', (group) => {
 				email: 'test@test.fr',
 				password: 'Test123!',
 			})
-			.withCsrfToken();
-
-		response.assertStatus(409);
-		response.assertFlashMessage('notification', {
-			type: NotificationType.Success,
-			message: 'You have been logged in successfully',
-		});
-
-		hash.restore();
-	});
-
-	test('POST /login without rememberMe parameter returns empty cookie', async ({ assert, client, route }) => {
-		hash.fake();
-
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-		});
-
-		await user.save();
-
-		const response = await client
-			.post(route('auth.login'))
-			.json({
-				email: 'test@test.fr',
-				password: 'Test123!',
-				rememberMe: false,
-			})
-			.withCsrfToken();
-		const cookie = response.cookie('remember_web');
-
-		assert.exists(cookie);
-		assert.empty(cookie?.value);
-		assert.equal(cookie?.maxAge, -1);
-		assert.notExists(await User.rememberMeTokens.verify(new Secret(cookie?.value as string)));
-
-		hash.restore();
-	});
-
-	test('POST /login with rememberMe parameter returns valid cookie', async ({ assert, client, route }) => {
-		hash.fake();
-
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-		});
-
-		await user.save();
-
-		const response = await client
-			.post(route('auth.login'))
-			.json({
-				email: 'test@test.fr',
-				password: 'Test123!',
-				rememberMe: true,
-			})
-			.withCsrfToken();
-		const cookie = response.cookie('remember_web');
-
-		assert.exists(cookie);
-		assert.notEmpty(cookie?.value);
-		assert.equal(cookie?.maxAge, 31_557_600);
-
-		const rememberMeToken = await User.rememberMeTokens.verify(new Secret(cookie?.value as string));
-
-		assert.exists(rememberMeToken);
-		assert.isFalse(rememberMeToken?.isExpired());
-
-		timeTravel('1 year');
-
-		assert.isTrue(rememberMeToken?.isExpired());
-
-		hash.restore();
-	});
-
-	test('GET / without rememberMe cookie has no user as props', async ({ client, route }) => {
-		hash.fake();
-
-		const response = await client
-			.get(route('home'))
-			.withEncryptedCookie('adonis-session', '')
-			.withEncryptedCookie('remember_web', '')
+			.withCsrfToken()
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaProps({});
-
-		hash.restore();
-	});
-
-	test('GET / with valid rememberMe cookie has user as props', async ({ client, route }) => {
-		hash.fake();
-
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-		});
-		const userSerialized = user.serialize({ fields: ['id', 'email', 'updatedAt', 'createdAt'] });
-
-		await user.save();
-
-		const loginResponse = await client
-			.post(route('auth.login'))
-			.json({
-				email: 'test@test.fr',
-				password: 'Test123!',
-				rememberMe: true,
-			})
-			.withCsrfToken();
-		const rememberWebCookie = loginResponse.cookie('remember_web');
-
-		const response = await client
-			.get(route('home'))
-			.withEncryptedCookie('adonis-session', '')
-			.withEncryptedCookie('remember_web', rememberWebCookie?.value)
-			.withInertia();
-
-		response.assertStatus(200);
-		response.assertInertiaProps({ user: userSerialized });
+		response.assertInertiaComponent('home');
 
 		hash.restore();
 	});

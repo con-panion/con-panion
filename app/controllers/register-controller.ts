@@ -9,7 +9,7 @@ export default class RegisterController {
 		return inertia.render('auth/register');
 	}
 
-	async handle({ request, auth, session, inertia }: HttpContext) {
+	async handle({ request, auth, session, response }: HttpContext) {
 		const { email, password } = await registerSchema(true).validate(request.all());
 		const user = await User.create({ email, password });
 
@@ -20,6 +20,6 @@ export default class RegisterController {
 			message: 'Account created successfully',
 		});
 
-		inertia.location('/');
+		response.redirect().toRoute('home');
 	}
 }

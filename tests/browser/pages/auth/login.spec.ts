@@ -137,6 +137,25 @@ test.group('Auth login', (group) => {
 		await page.assertUrlContains(route('auth.login'));
 	});
 
+	test("Home page don't show login button when logged in", async ({ visit, route }) => {
+		hash.fake();
+
+		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+
+		await user.save();
+
+		const page = await visit(route('auth.login'));
+
+		await page.getByLabel('Email').fill(user.email);
+		await page.getByLabel('Password').fill('Test123!');
+		await page.getByRole('button', { name: 'Login' }).click();
+		await page.waitForURL(route('home'));
+
+		await page.assertNotExists(page.getByRole('link', { name: 'Login' }));
+
+		hash.restore();
+	});
+
 	test('Don\'t recover session when logged in with "remember me" not checked', async ({
 		browserContext,
 		visit,

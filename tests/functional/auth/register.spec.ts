@@ -4,7 +4,6 @@ import { test } from '@japa/runner';
 
 import { UserFactory } from '#database/factories/user-factory';
 import User from '#models/user';
-import { NotificationType } from '#types/notification';
 
 test.group('Auth register', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
@@ -58,13 +57,11 @@ test.group('Auth register', (group) => {
 				password: 'Test123!',
 				confirmPassword: 'Test123!',
 			})
-			.withCsrfToken();
+			.withCsrfToken()
+			.withInertia();
 
-		response.assertStatus(409);
-		response.assertFlashMessage('notification', {
-			type: NotificationType.Success,
-			message: 'Account created successfully',
-		});
+		response.assertStatus(200);
+		response.assertInertiaComponent('home');
 
 		const user = await User.findBy('email', 'test@test.fr');
 

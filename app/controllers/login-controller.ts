@@ -8,7 +8,7 @@ export default class LoginController {
 		return inertia.render('auth/login');
 	}
 
-	async handle({ request, auth, inertia, session }: HttpContext) {
+	async handle({ request, auth, response, session }: HttpContext) {
 		const { email, password, rememberMe } = await loginValidator.validate(request.all());
 		const user = await User.verifyCredentials(email, password);
 
@@ -19,6 +19,6 @@ export default class LoginController {
 			message: 'You have been logged in successfully',
 		});
 
-		inertia.location('/');
+		response.redirect().toRoute('home');
 	}
 }
