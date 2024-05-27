@@ -94,6 +94,7 @@ test.group('Auth login', (group) => {
 		await page.getByLabel('Password').fill('Test123!');
 		await page.getByRole('button', { name: 'Login' }).click();
 		await page.waitForURL(route('home'));
+		await page.waitForTimeout(500);
 
 		await page.assertVisible(page.getByText('You have been logged in successfully'));
 
