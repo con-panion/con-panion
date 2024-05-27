@@ -3,6 +3,7 @@ import { route } from '@izzyjs/route/client';
 
 import type User from '#models/user';
 
+import { LogoutForm } from '~/components/forms/logout-form';
 import { Notifications } from '~/components/notifications';
 
 export default function Home() {
@@ -14,9 +15,7 @@ export default function Home() {
 
 			<h1 className="text-3xl font-bold underline">Hello world!</h1>
 			{user ? (
-				<Link href="#" className="underline">
-					Logout
-				</Link>
+				<LogoutForm />
 			) : (
 				<>
 					<Link href={route('auth.login').url} className="underline">
