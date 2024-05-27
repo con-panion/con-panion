@@ -31,7 +31,7 @@ test.group('Auth logout', (group) => {
 		await page.assertExists(logoutButton);
 
 		await logoutButton.click();
-		await page.waitForTimeout(500);
+		await page.waitForTimeout(100);
 
 		/* if (browser.browserType().name() !== 'webkit') {
 			await page.waitForNavigation();
@@ -58,7 +58,7 @@ test.group('Auth logout', (group) => {
 
 		await page.getByRole('button', { name: 'Logout' }).click();
 		await page.waitForURL(route('home'));
-		await page.waitForTimeout(500);
+		await page.waitForTimeout(100);
 
 		await page.assertVisible(page.getByText('You have been successfully logged out'));
 

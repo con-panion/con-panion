@@ -121,7 +121,7 @@ test.group('Auth register', (group) => {
 		await page.getByLabel('Confirm password').fill('Test123!');
 		await page.getByRole('button', { name: 'Create an account' }).click();
 		await page.waitForURL(route('home'));
-		await page.waitForTimeout(500);
+		await page.waitForTimeout(100);
 
 		await page.assertVisible(page.getByText('Account created successfully'));
 
