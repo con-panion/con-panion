@@ -1,0 +1,49 @@
+diff --git a/build/extend_browser_client-FGKCGKIC.js b/build/extend_browser_client-FGKCGKIC.js
+index c8c38874f1b643f3f99a0788cfc55f0c18c21f55..c83cac89a854cb0974258bb5f15a34369cd9a374 100644
+--- a/build/extend_browser_client-FGKCGKIC.js
++++ b/build/extend_browser_client-FGKCGKIC.js
+@@ -56,38 +56,38 @@ function extendBrowserClient(cookieClient, baseURL) {
+         }
+         return cookieClient.decode(key, tryDecode(cookie.value));
+       };
+-      context.setCookie = async function(key, value, options) {
++      context.setCookie = async function(key, value, options = {}) {
+         const signedValue = cookieClient.sign(key, value);
+         if (signedValue) {
+           await this.addCookies([
+             {
+               name: key,
+               value: signedValue,
+-              ...normalizeCookieOptions(cookiesDomain, options)
++              ...normalizeCookieOptions(cookiesDomain, { ...options, domain: process.env.HOST })
+             }
+           ]);
+         }
+       };
+-      context.setEncryptedCookie = async function(key, value, options) {
++      context.setEncryptedCookie = async function(key, value, options = {}) {
+         const encryptedValue = cookieClient.encrypt(key, value);
+         if (encryptedValue) {
+           await this.addCookies([
+             {
+               name: key,
+               value: encryptedValue,
+-              ...normalizeCookieOptions(cookiesDomain, options)
++              ...normalizeCookieOptions(cookiesDomain, { ...options, domain: process.env.HOST })
+             }
+           ]);
+         }
+       };
+-      context.setPlainCookie = async function(key, value, options) {
++      context.setPlainCookie = async function(key, value, options = {}) {
+         const plainCookie = cookieClient.encode(key, value);
+         if (plainCookie) {
+           await this.addCookies([
+             {
+               name: key,
+               value: plainCookie,
+-              ...normalizeCookieOptions(cookiesDomain, options)
++              ...normalizeCookieOptions(cookiesDomain, { ...options, domain: process.env.HOST })
+             }
+           ]);
+         }

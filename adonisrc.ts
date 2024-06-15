@@ -14,6 +14,7 @@ export default defineConfig({
 		() => import('@adonisjs/core/commands'),
 		() => import('@adonisjs/lucid/commands'),
 		() => import('@izzyjs/route/commands'),
+		() => import('@adonisjs/mail/commands'),
 	],
 
 	/*
@@ -43,6 +44,7 @@ export default defineConfig({
 		() => import('@izzyjs/route/izzy_provider'),
 		() => import('@adonisjs/inertia/inertia_provider'),
 		() => import('@adonisjs/auth/auth_provider'),
+		() => import('@adonisjs/mail/mail_provider'),
 	],
 
 	/*

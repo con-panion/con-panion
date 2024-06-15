@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { NotificationFlash } from '#types/notification';
 
 import { useMounted } from '~/hooks/use-mounted';
-import { handleNotification } from '~/lib/utils';
+import { handleNotification } from '~/lib/handle-notification';
 
 import { Toaster } from './ui/sonner';
 

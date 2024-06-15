@@ -81,10 +81,37 @@ test.group('Auth login', (group) => {
 		await page.assertVisible(page.getByText('Invalid user credentials'));
 	});
 
-	test('Show confirmation message returned by the server when submitting the form', async ({ visit, route }) => {
+	test('Show verify email message returned by the server when submitting the form with unverified user', async ({
+		visit,
+		route,
+	}) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: false });
+
+		await user.save();
+
+		const page = await visit(route('auth.login'));
+
+		await page.getByLabel('Email').fill(user.email);
+		await page.getByLabel('Password').fill('Test123!');
+		await page.getByRole('button', { name: 'Login' }).click();
+		await page.waitForURL(route('auth.login'));
+		await page.waitForTimeout(100);
+
+		await page.assertVisible(page.getByText('Please check your email to verify your account'));
+		await page.assertVisible(page.getByRole('button', { name: 'Resend email' }));
+
+		hash.restore();
+	});
+
+	test('Show confirmation message returned by the server when submitting the form with verified user', async ({
+		visit,
+		route,
+	}) => {
+		hash.fake();
+
+		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: true });
 
 		await user.save();
 
@@ -101,26 +128,21 @@ test.group('Auth login', (group) => {
 		hash.restore();
 	});
 
-	test('Redirect to home page when accessing auth page when loggen in', async ({ visit, route }) => {
+	test('Redirect to home page when accessing auth page when loggen in', async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
 
-		await user.save();
-
-		const page = await visit(route('auth.login'));
-
-		await page.getByLabel('Email').fill(user.email);
-		await page.getByLabel('Password').fill('Test123!');
-		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForURL(route('home'));
+		await browserContext.withGuard('web').loginAs(user);
 
 		const loginPage = await visit(route('auth.login'));
-
-		await loginPage.assertPath(route('home'));
-
 		const registerPage = await visit(route('auth.register'));
 
+		await loginPage.assertPath(route('home'));
 		await registerPage.assertPath(route('home'));
 
 		hash.restore();
@@ -138,19 +160,18 @@ test.group('Auth login', (group) => {
 		await page.assertUrlContains(route('auth.login'));
 	});
 
-	test("Home page don't show login button when logged in", async ({ visit, route }) => {
+	test("Home page don't show login button when logged in", async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
 
-		await user.save();
+		await browserContext.loginAs(user);
 
-		const page = await visit(route('auth.login'));
-
-		await page.getByLabel('Email').fill(user.email);
-		await page.getByLabel('Password').fill('Test123!');
-		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForURL(route('home'));
+		const page = await visit(route('home'));
 
 		await page.assertNotExists(page.getByRole('link', { name: 'Login' }));
 
@@ -164,20 +185,18 @@ test.group('Auth login', (group) => {
 	}) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
 
-		await user.save();
-
-		const page = await visit(route('auth.login'));
-
-		await page.getByLabel('Email').fill(user.email);
-		await page.getByLabel('Password').fill('Test123!');
-		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForURL(route('home'));
-
-		await browserContext.setCookie('adonis-session', '', { domain: 'localhost' });
+		await browserContext.loginAs(user);
 
 		const homePage = await visit(route('home'));
+
+		await browserContext.setCookie('adonis-session', '', { domain: 'localhost' });
+		await homePage.reload();
 
 		await homePage.assertExists(homePage.getByRole('link', { name: 'Login' }));
 
@@ -187,7 +206,7 @@ test.group('Auth login', (group) => {
 	test('Recover session when logged in with "remember me" checked', async ({ browserContext, visit, route }) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: true });
 
 		await user.save();
 
@@ -215,7 +234,7 @@ test.group('Auth login', (group) => {
 	}) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: true });
 
 		await user.save();
 

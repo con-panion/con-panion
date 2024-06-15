@@ -5,14 +5,15 @@ export enum NotificationType {
 	Warning = 'warning',
 }
 
-interface NotificationWithTitle {
-	title: string;
-	message: string;
-}
-
-interface NotificationWithoutTitle {
+interface Notification {
 	type: NotificationType;
 	message: string;
 }
 
-export type NotificationFlash = NotificationWithoutTitle | NotificationWithTitle;
+export interface NotificationWithAction extends Notification {
+	actionLabel: string;
+	actionUrl?: string;
+	actionBody?: Record<string, string>;
+}
+
+export type NotificationFlash = Notification | NotificationWithAction;

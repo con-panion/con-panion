@@ -2,18 +2,18 @@ name: Tests
 on:
   push:
     branches:
-      - "*"
+      - '*'
     paths-ignore:
-      - "*.{md,txt}"
+      - '*.{md,txt}'
       - LICENSE
       - .*config
     tags-ignore:
-      - "*"
+      - '*'
   pull_request:
     branches:
-      - "*"
+      - '*'
     paths-ignore:
-      - "*.{md,txt}"
+      - '*.{md,txt}'
       - LICENSE
       - .*config
 
@@ -26,35 +26,39 @@ jobs:
       matrix:
         test-mode: [functional, chromium, firefox, webkit]
         include:
-          - port: 5430
+          - pg-port: 5430
             test-mode: functional
-          - port: 5431
+          - pg-port: 5431
             test-mode: chromium
-          - port: 5432
+          - pg-port: 5432
             test-mode: firefox
-          - port: 5433
+          - pg-port: 5433
             test-mode: webkit
 
     env:
       TZ: UTC
       PORT: 3333
-      HOST: 0.0.0.0
+      HOST: localhost
       LOG_LEVEL: info
       APP_KEY: zKXHe-Ahdb7aPK1ylAJlRgTefktEaACi
       NODE_ENV: development
       SESSION_DRIVER: memory
-      DB_HOST: 0.0.0.0
-      DB_PORT: ${{ matrix.port }}
+      DB_HOST: localhost
+      DB_PORT: ${{ matrix.pg-port }}
       DB_USER: con-panion
       DB_PASSWORD: con-panion
       DB_DATABASE: con-panion
+      APP_EMAIL: noreply@test.fr
+      APP_URL: http://localhost:3333
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
 
     services:
       postgres-${{ matrix.test-mode }}:
         image: postgres
 
         ports:
-          - '${{ matrix.port }}:5432'
+          - '${{ matrix.pg-port }}:5432'
 
         env:
           PGPASSWORD: con-panion
@@ -67,6 +71,13 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+      mailcatcher:
+        image: sj26/mailcatcher
+
+        ports:
+            - '1080:1080'
+            - '1025:1025'
 
     steps:
       - name: Check out repository code

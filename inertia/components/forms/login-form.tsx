@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { NotificationType } from '#types/notification';
 import { loginValidator, type LoginSchema } from '#validators/auth';
 
-import { handleNotification } from '~/lib/utils';
+import { handleNotification } from '~/lib/handle-notification';
 import { vineResolver } from '~/lib/vine-resolver';
 
 import { Button } from '../ui/button';

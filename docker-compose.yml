@@ -9,3 +9,9 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_DATABASE}
+  
+  mailcatcher:
+    image: sj26/mailcatcher
+    ports:
+      - '1080:1080'
+      - '1025:1025'

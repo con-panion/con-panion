@@ -56,7 +56,7 @@ test.group('Auth login', (group) => {
 		});
 	});
 
-	test('POST /login with invalid credentials returns error', async ({ client, route }) => {
+	test('POST /login with invalid credentials returns error notification', async ({ client, route }) => {
 		const response = await client
 			.post(route('auth.login'))
 			.json({
@@ -75,12 +75,16 @@ test.group('Auth login', (group) => {
 		});
 	});
 
-	test('POST /login with valid credentials logs user in', async ({ client, route }) => {
+	test('POST /login with valid credentials and unverified user returns verify email notification', async ({
+		client,
+		route,
+	}) => {
 		hash.fake();
 
 		const user = await User.create({
 			email: 'test@test.fr',
 			password: 'Test123!',
+			isVerified: false,
 		});
 
 		await user.save();
@@ -95,7 +99,58 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('home');
+		response.assertInertiaProps({
+			notification: {
+				type: NotificationType.Info,
+				message: 'Please check your email to verify your account',
+				actionLabel: 'Resend email',
+				actionUrl: '/verify-email/resend',
+				actionBody: {
+					email: 'test@test.fr',
+				},
+			},
+		});
+
+		hash.restore();
+	});
+
+	test('POST /login with valid credentials and verified user logs user in', async ({ client, route }) => {
+		hash.fake();
+
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
+
+		await user.save();
+
+		const response = await client
+			.post(route('auth.login'))
+			.json({
+				email: 'test@test.fr',
+				password: 'Test123!',
+			})
+			.redirects(0)
+			.withCsrfToken();
+
+		response.assertStatus(302);
+		response.assertFlashMessage('notification', {
+			type: NotificationType.Success,
+			message: 'You have been logged in successfully',
+		});
+
+		const redirectionResponse = await client
+			.post(route('auth.login'))
+			.json({
+				email: 'test@test.fr',
+				password: 'Test123!',
+			})
+			.withCsrfToken()
+			.withInertia();
+
+		redirectionResponse.assertStatus(200);
+		redirectionResponse.assertInertiaComponent('home');
 
 		hash.restore();
 	});

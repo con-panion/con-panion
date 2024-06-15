@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http';
+import router from '@adonisjs/core/services/router';
 
 import User from '#models/user';
+import { NotificationType } from '#types/notification';
 import { loginValidator } from '#validators/auth';
 
 export default class LoginController {
@@ -12,10 +14,24 @@ export default class LoginController {
 		const { email, password, rememberMe } = await loginValidator.validate(request.all());
 		const user = await User.verifyCredentials(email, password);
 
+		if (!user.isVerified) {
+			session.flash('notification', {
+				type: NotificationType.Info,
+				message: 'Please check your email to verify your account',
+				actionLabel: 'Resend email',
+				actionUrl: router.makeUrl('auth.verify-email.resend'),
+				actionBody: { email: user.email },
+			});
+
+			response.redirect().toRoute('auth.login');
+
+			return;
+		}
+
 		await auth.use('web').login(user, !!rememberMe);
 
 		session.flash('notification', {
-			type: 'success',
+			type: NotificationType.Success,
 			message: 'You have been logged in successfully',
 		});
 

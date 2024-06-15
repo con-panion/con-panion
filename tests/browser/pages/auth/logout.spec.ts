@@ -12,20 +12,18 @@ test.group('Auth logout', (group) => {
 		await page.assertNotExists(page.getByRole('button', { name: 'Logout' }));
 	});
 
-	test('Home page show logout button when logged in', async ({ visit, route }) => {
+	test('Home page show logout button when logged in', async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
 
-		await user.save();
+		await browserContext.loginAs(user);
 
-		const page = await visit(route('auth.login'));
-
-		await page.getByLabel('Email').fill(user.email);
-		await page.getByLabel('Password').fill('Test123!');
-		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForURL(route('home'));
-
+		const page = await visit(route('home'));
 		const logoutButton = page.getByRole('button', { name: 'Logout' });
 
 		await page.assertExists(logoutButton);
@@ -33,28 +31,27 @@ test.group('Auth logout', (group) => {
 		await logoutButton.click();
 		await page.waitForTimeout(100);
 
-		/* if (browser.browserType().name() !== 'webkit') {
-			await page.waitForNavigation();
-		} */
-
 		await page.assertNotExists(logoutButton);
 
 		hash.restore();
 	});
 
-	test('Show confirmation message returned by the server when submitting the form', async ({ visit, route }) => {
+	test('Show confirmation message returned by the server when submitting the form', async ({
+		visit,
+		route,
+		browserContext,
+	}) => {
 		hash.fake();
 
-		const user = await User.create({ email: 'test@test.fr', password: 'Test123!' });
+		const user = await User.create({
+			email: 'test@test.fr',
+			password: 'Test123!',
+			isVerified: true,
+		});
 
-		await user.save();
+		await browserContext.loginAs(user);
 
-		const page = await visit(route('auth.login'));
-
-		await page.getByLabel('Email').fill(user.email);
-		await page.getByLabel('Password').fill('Test123!');
-		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForURL(route('home'));
+		const page = await visit(route('home'));
 
 		await page.getByRole('button', { name: 'Logout' }).click();
 		await page.waitForURL(route('home'));

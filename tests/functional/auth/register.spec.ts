@@ -1,9 +1,14 @@
 import hash from '@adonisjs/core/services/hash';
+import router from '@adonisjs/core/services/router';
 import testUtils from '@adonisjs/core/services/test_utils';
+import mail from '@adonisjs/mail/services/main';
 import { test } from '@japa/runner';
 
 import { UserFactory } from '#database/factories/user-factory';
+import VerifyEmailNotification from '#mails/verify-email-notification';
 import User from '#models/user';
+import env from '#start/env';
+import { NotificationType } from '#types/notification';
 
 test.group('Auth register', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
@@ -47,30 +52,9 @@ test.group('Auth register', (group) => {
 		response.assertInertiaProps({});
 	});
 
-	test('POST /register with valid body creates a new user', async ({ assert, client, route }) => {
-		hash.fake();
-
-		const response = await client
-			.post(route('auth.register'))
-			.json({
-				email: 'test@test.fr',
-				password: 'Test123!',
-				confirmPassword: 'Test123!',
-			})
-			.withCsrfToken()
-			.withInertia();
-
-		response.assertStatus(200);
-		response.assertInertiaComponent('home');
-
-		const user = await User.findBy('email', 'test@test.fr');
-
-		assert.exists(user);
-
-		hash.restore();
-	});
-
 	test('POST /register with invalid body returns validation errors', async ({ assert, client, route }) => {
+		const { mails } = mail.fake();
+
 		const response = await client
 			.post(route('auth.register'))
 			.json({
@@ -92,6 +76,84 @@ test.group('Auth register', (group) => {
 
 		const user = await User.findBy('email', 'not-an-email');
 
+		mails.assertNotSent(VerifyEmailNotification);
+
 		assert.notExists(user);
+	});
+
+	test('POST /register with valid body creates a new user and sends verification email', async ({
+		assert,
+		client,
+		route,
+	}) => {
+		hash.fake();
+
+		const { mails } = mail.fake();
+
+		const response = await client
+			.post(route('auth.register'))
+			.json({
+				email: 'test@test.fr',
+				password: 'Test123!',
+				confirmPassword: 'Test123!',
+			})
+			.withCsrfToken()
+			.withInertia();
+
+		response.assertStatus(200);
+		response.assertInertiaComponent('auth/login');
+		response.assertInertiaProps({
+			notification: {
+				type: NotificationType.Info,
+				message: 'Please check your email to verify your account',
+				actionLabel: 'Resend email',
+				actionUrl: '/verify-email/resend',
+				actionBody: {
+					email: 'test@test.fr',
+				},
+			},
+		});
+
+		const user = await User.findBy('email', 'test@test.fr');
+
+		if (!user) {
+			return assert.fail();
+		}
+
+		let verifyEmailUrl: string | undefined;
+		mails.assertSent(VerifyEmailNotification, (email) => {
+			email.message.assertTo(user.email);
+			email.message.assertSubject('Email Verification');
+
+			const verifyEmailUrlWithoutSignature = router
+				.builder()
+				.prefixUrl(env.get('APP_URL'))
+				.params({ email: user.email })
+				.make('auth.verify-email');
+
+			verifyEmailUrl = email.message
+				.toJSON()
+				.message.text?.toString()
+				.match(new RegExp(`^${verifyEmailUrlWithoutSignature}.*?$`, 'm'))?.[0];
+
+			return !!verifyEmailUrl;
+		});
+
+		const verifyResponse = await client.get(verifyEmailUrl!).withInertia();
+
+		verifyResponse.assertStatus(200);
+		verifyResponse.assertInertiaComponent('auth/login');
+		verifyResponse.assertInertiaProps({
+			notification: {
+				type: NotificationType.Success,
+				message: 'Your email has been successfully verified',
+			},
+		});
+
+		const updatedUser = await User.find(user.id);
+
+		assert.isTrue(updatedUser!.isVerified);
+
+		hash.restore();
 	});
 });

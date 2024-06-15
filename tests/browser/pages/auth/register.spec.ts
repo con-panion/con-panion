@@ -111,7 +111,7 @@ test.group('Auth register', (group) => {
 		hash.restore();
 	});
 
-	test('Show confirmation message returned by the server when submitting the form', async ({ visit, route }) => {
+	test('Show verify email notification returned by the server when submitting the form', async ({ visit, route }) => {
 		hash.fake();
 
 		const page = await visit(route('auth.register'));
@@ -120,10 +120,11 @@ test.group('Auth register', (group) => {
 		await page.getByLabel(/^Password$/).fill('Test123!');
 		await page.getByLabel('Confirm password').fill('Test123!');
 		await page.getByRole('button', { name: 'Create an account' }).click();
-		await page.waitForURL(route('home'));
+		await page.waitForURL(route('auth.login'));
 		await page.waitForTimeout(100);
 
-		await page.assertVisible(page.getByText('Account created successfully'));
+		await page.assertVisible(page.getByText('Please check your email to verify your account'));
+		await page.assertVisible(page.getByRole('button', { name: 'Resend email' }));
 
 		hash.restore();
 	});
@@ -138,21 +139,5 @@ test.group('Auth register', (group) => {
 		await page.waitForURL(route('auth.register'));
 
 		await page.assertUrlContains(route('auth.register'));
-	});
-
-	test("Home page don't show register button when logged in", async ({ visit, route }) => {
-		hash.fake();
-
-		const page = await visit(route('auth.register'));
-
-		await page.getByLabel('Email').fill('test@test.fr');
-		await page.getByLabel(/^Password$/).fill('Test123!');
-		await page.getByLabel('Confirm password').fill('Test123!');
-		await page.getByRole('button', { name: 'Create an account' }).click();
-		await page.waitForURL(route('home'));
-
-		await page.assertNotExists(page.getByRole('link', { name: 'Register' }));
-
-		hash.restore();
 	});
 });

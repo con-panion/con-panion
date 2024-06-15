@@ -4,6 +4,8 @@ import app from '@adonisjs/core/services/app';
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http';
 import { errors as vineErrors, type SimpleErrorReporter } from '@vinejs/vine';
 
+import { NotificationType } from '#types/notification';
+
 export default class HttpExceptionHandler extends ExceptionHandler {
 	/**
 	 * In debug mode, the exception handler will display verbose errors
@@ -50,11 +52,9 @@ export default class HttpExceptionHandler extends ExceptionHandler {
 
 		if (error instanceof authErrors.E_INVALID_CREDENTIALS) {
 			context.session.flash('notification', {
-				type: 'error',
+				type: NotificationType.Error,
 				message: error.message,
 			});
-
-			return super.handle(error, context);
 		}
 
 		return super.handle(error, context);
