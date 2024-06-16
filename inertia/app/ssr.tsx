@@ -1,24 +1,22 @@
-import { StrictMode } from 'react';
-
 import { createInertiaApp } from '@inertiajs/react';
-import { ThemeProvider } from 'next-themes';
 import ReactDOMServer from 'react-dom/server';
 
-export default function render(page: string) {
+import { AppLayout } from '~/layouts/app-layout';
+
+export default function render(pageName: string) {
 	return createInertiaApp({
-		page,
+		page: pageName,
 		render: ReactDOMServer.renderToString,
 		resolve: (name: string) => {
 			const pages = import.meta.glob('../pages/**/*.tsx', { eager: true });
+			const page = pages[`../pages/${name}.tsx`];
 
-			return pages[`../pages/${name}.tsx`];
+			/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+			// @ts-expect-error Page is unknown
+			page.default.layout = page.default.layout || ((app) => <AppLayout>{app}</AppLayout>);
+
+			return page;
 		},
-		setup: ({ App, props }) => (
-			<StrictMode>
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-					<App {...props} />
-				</ThemeProvider>
-			</StrictMode>
-		),
+		setup: ({ App, props }) => <App {...props} />,
 	});
 }

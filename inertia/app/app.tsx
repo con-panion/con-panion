@@ -1,11 +1,10 @@
 import '../css/app.css';
 
-import { StrictMode } from 'react';
-
 import { resolvePageComponent } from '@adonisjs/inertia/helpers';
 import { createInertiaApp } from '@inertiajs/react';
-import { ThemeProvider } from 'next-themes';
 import { hydrateRoot } from 'react-dom/client';
+
+import { AppLayout } from '~/layouts/app-layout';
 
 const appName = (import.meta.env.VITE_APP_NAME as string) || 'con-panion';
 
@@ -14,16 +13,17 @@ createInertiaApp({
 
 	title: (title) => (title ? `${title} - ${appName}` : appName),
 
-	resolve: (name) => resolvePageComponent(`../pages/${name}.tsx`, import.meta.glob('../pages/**/*.tsx')),
+	resolve: async (name) => {
+		const page = await resolvePageComponent(`../pages/${name}.tsx`, import.meta.glob('../pages/**/*.tsx'));
+
+		/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+		// @ts-expect-error Page is unknown
+		page.default.layout = page.default.layout || ((app) => <AppLayout>{app}</AppLayout>);
+
+		return page;
+	},
 
 	setup({ el, App, props }) {
-		hydrateRoot(
-			el,
-			<StrictMode>
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-					<App {...props} />
-				</ThemeProvider>
-			</StrictMode>,
-		);
+		hydrateRoot(el, <App {...props} />);
 	},
 });
