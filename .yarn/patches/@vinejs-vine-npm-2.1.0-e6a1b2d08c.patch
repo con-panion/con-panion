@@ -1,0 +1,17 @@
+diff --git a/build/chunk-2W32DW3L.js b/build/chunk-2W32DW3L.js
+index 978ff76e2d89df3dd750a9d65a0335a50d1376bc..1b0af5d7c056d30f7437215207cd791583fb1e59 100644
+--- a/build/chunk-2W32DW3L.js
++++ b/build/chunk-2W32DW3L.js
+@@ -80,8 +80,10 @@ var ValidationError = class extends Error {
+   constructor(messages, options) {
+     super("Validation failure", options);
+     this.messages = messages;
+-    const ErrorConstructor = this.constructor;
+-    Error.captureStackTrace(this, ErrorConstructor);
++    if ('captureStackTrace' in Error) {
++      const ErrorConstructor = this.constructor;
++      Error.captureStackTrace(this, ErrorConstructor);
++    }
+   }
+   /**
+    * Http status code for the validation error
