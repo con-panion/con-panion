@@ -2,6 +2,7 @@ import hash from '@adonisjs/core/services/hash';
 import testUtils from '@adonisjs/core/services/test_utils';
 import { test } from '@japa/runner';
 
+import { UserFactory } from '#database/factories/user-factory';
 import User from '#models/user';
 import { NotificationType } from '#types/notification';
 
@@ -16,20 +17,27 @@ test.group('Auth login', (group) => {
 		response.assertInertiaProps({});
 	});
 
+	test('GET /login with logged user redirects to home', async ({ client, route }) => {
+		hash.fake();
+
+		const user = await UserFactory.create();
+		const response = await client.get(route('auth.login')).loginAs(user).withInertia();
+
+		response.assertStatus(200);
+		response.assertRedirectsTo(route('home'));
+
+		hash.restore();
+	});
+
 	test('GET / with logged user has user as prop', async ({ client, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-		});
+		const user = await UserFactory.create();
 		const serializedUser = user.serialize({ fields: ['id', 'email', 'updatedAt', 'createdAt'] });
-
-		await user.save();
-
 		const response = await client.get(route('home')).loginAs(user).withInertia();
 
 		response.assertStatus(200);
+		response.assertInertiaComponent('home');
 		response.assertInertiaPropsContains({
 			user: serializedUser,
 		});
@@ -37,9 +45,28 @@ test.group('Auth login', (group) => {
 		hash.restore();
 	});
 
+	test('POST /login with empty body returns validation errors', async ({ client, route }) => {
+		const response = await client
+			.post(route('auth.login'))
+			.header('referrer', route('auth.login'))
+			.json({})
+			.withCsrfToken()
+			.withInertia();
+
+		response.assertStatus(200);
+		response.assertInertiaComponent('auth/login');
+		response.assertInertiaProps({
+			errors: {
+				email: ['The email field must be defined'],
+				password: ['The password field must be defined'],
+			},
+		});
+	});
+
 	test('POST /login with invalid body returns validation errors', async ({ client, route }) => {
 		const response = await client
 			.post(route('auth.login'))
+			.header('referrer', route('auth.login'))
 			.json({
 				email: 'not-an-email',
 				password: '',
@@ -48,6 +75,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
+		response.assertInertiaComponent('auth/login');
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be a valid email address'],
@@ -59,6 +87,7 @@ test.group('Auth login', (group) => {
 	test('POST /login with invalid credentials returns error notification', async ({ client, route }) => {
 		const response = await client
 			.post(route('auth.login'))
+			.header('referrer', route('auth.login'))
 			.json({
 				email: 'test@test.fr',
 				password: 'Test123!',
@@ -67,6 +96,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
+		response.assertInertiaComponent('auth/login');
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -91,6 +121,7 @@ test.group('Auth login', (group) => {
 
 		const response = await client
 			.post(route('auth.login'))
+			.header('referrer', route('auth.login'))
 			.json({
 				email: 'test@test.fr',
 				password: 'Test123!',
@@ -99,6 +130,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
+		response.assertInertiaComponent('auth/login');
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Info,
@@ -150,7 +182,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		redirectionResponse.assertStatus(200);
-		redirectionResponse.assertInertiaComponent('home');
+		redirectionResponse.assertRedirectsTo(route('home'));
 
 		hash.restore();
 	});

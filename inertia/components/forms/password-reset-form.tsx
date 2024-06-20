@@ -1,35 +1,36 @@
 import { useEffect, useState } from 'react';
 
+import type { InferPageProps } from '@adonisjs/inertia/types';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { Link, router, usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { route } from '@izzyjs/route/client';
 import { useForm } from 'react-hook-form';
 
+import type PasswordResetController from '#controllers/password-reset-controller';
 import { NotificationType } from '#types/notification';
-import { loginValidator, type LoginSchema } from '#validators/auth';
+import { passwordResetValidator, type PasswordResetSchema } from '#validators/auth';
 
 import { handleNotification } from '~/lib/handle-notification';
 import { vineResolver } from '~/lib/vine-resolver';
 
 import { Button } from '../ui/button';
-import { Checkbox } from '../ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
 
-export function LoginForm() {
+export function PasswordResetForm({ token }: InferPageProps<PasswordResetController, 'reset'>) {
 	const pageProps = usePage().props;
 
-	const form = useForm<LoginSchema>({
+	const form = useForm<PasswordResetSchema>({
 		mode: 'onChange',
-		resolver: vineResolver(loginValidator),
+		resolver: vineResolver(passwordResetValidator),
 		defaultValues: {
-			email: '',
 			password: '',
-			rememberMe: false,
+			passwordConfirmation: '',
 		},
 	});
 
 	const [isPasswordHidden, setPasswordHidden] = useState(true);
+	const [isPasswordConfirmationHidden, setPasswordConfirmationHidden] = useState(true);
 
 	useEffect(() => {
 		if (!('errors' in pageProps)) {
@@ -40,17 +41,14 @@ export function LoginForm() {
 		const errorKeys = Object.keys(errors);
 
 		for (const errorKey of errorKeys) {
-			form.setError(errorKey as keyof LoginSchema, { type: 'manual', message: errors[errorKey] });
+			form.setError(errorKey as keyof PasswordResetSchema, { type: 'manual', message: errors[errorKey] });
 		}
 	}, [pageProps.errors]);
 
-	function onSubmit(data: LoginSchema) {
-		router.post(route('auth.login').url, data, {
+	function onSubmit(data: PasswordResetSchema) {
+		router.patch(route('auth.password-reset', { params: { token } }).url, data, {
 			onError: () => {
-				handleNotification({
-					type: NotificationType.Error,
-					message: 'An error has occurred, please try again',
-				});
+				handleNotification({ type: NotificationType.Error, message: 'An error has occurred, please try again' });
 			},
 		});
 	}
@@ -65,25 +63,10 @@ export function LoginForm() {
 						<div className="grid gap-2">
 							<FormField
 								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Email</FormLabel>
-										<FormControl>
-											<Input className="w-full bg-muted text-base" required autoComplete="email" {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
-						<div className="grid gap-2">
-							<FormField
-								control={form.control}
 								name="password"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Password</FormLabel>
+										<FormLabel>New password</FormLabel>
 										<div className="relative">
 											<FormControl>
 												<Input
@@ -116,24 +99,41 @@ export function LoginForm() {
 						<div className="grid gap-2">
 							<FormField
 								control={form.control}
-								name="rememberMe"
+								name="passwordConfirmation"
 								render={({ field }) => (
-									<FormItem className="flex space-x-2 space-y-0">
-										<FormControl>
-											<Checkbox checked={!!field.value} onCheckedChange={field.onChange} />
-										</FormControl>
-										<FormLabel className="text-xs font-normal">Remember me</FormLabel>
+									<FormItem>
+										<FormLabel>Confirm new password</FormLabel>
+										<div className="relative w-full">
+											<FormControl>
+												<Input
+													className="w-full bg-muted text-base"
+													required
+													type={isPasswordConfirmationHidden ? 'password' : 'text'}
+													placeholder="Repeat your password"
+													autoComplete="new-password"
+													{...field}
+												/>
+											</FormControl>
+											{!isPasswordConfirmationHidden && (
+												<EyeIcon
+													onClick={() => setPasswordConfirmationHidden(true)}
+													className="absolute inset-y-1/2 right-2 h-5 w-5 -translate-y-1/2 cursor-pointer opacity-50"
+												/>
+											)}
+											{isPasswordConfirmationHidden && (
+												<EyeSlashIcon
+													onClick={() => setPasswordConfirmationHidden(false)}
+													className="absolute inset-y-1/2 right-2 h-5 w-5 -translate-y-1/2 cursor-pointer opacity-50"
+												/>
+											)}
+										</div>
+										<FormMessage />
 									</FormItem>
 								)}
 							/>
 						</div>
-						<div className="grid gap-2">
-							<Link href={route('auth.forgot-password').url} className="ml-auto inline-block text-sm underline">
-								Forgot your password?
-							</Link>
-						</div>
 						<Button type="submit" className="mt-4 w-full" disabled={disableSubmit}>
-							Login
+							Reset Password
 						</Button>
 					</div>
 				</fieldset>

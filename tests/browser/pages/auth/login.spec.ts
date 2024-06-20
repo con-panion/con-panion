@@ -2,6 +2,7 @@ import hash from '@adonisjs/core/services/hash';
 import testUtils from '@adonisjs/core/services/test_utils';
 import { test } from '@japa/runner';
 
+import { UserFactory } from '#database/factories/user-factory';
 import User from '#models/user';
 import { timeTravel } from '#test-helpers/time-travel';
 
@@ -70,21 +71,18 @@ test.group('Auth login', (group) => {
 		assert.assert((await page.getByLabel('Password').getAttribute('type')) === 'password');
 	});
 
-	test('Show error returned by the server when submitting form with invalid credentials', async ({ visit, route }) => {
+	test('Show error message when submitting form with invalid credentials', async ({ visit, route }) => {
 		const page = await visit(route('auth.login'));
 
 		await page.getByLabel('Email').fill('test@test.fr');
 		await page.getByLabel('Password').fill('Test123!');
 		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForSelector('.toast');
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('Invalid user credentials'));
 	});
 
-	test('Show verify email message returned by the server when submitting the form with unverified user', async ({
-		visit,
-		route,
-	}) => {
+	test('Show verify email message when submitting the form with unverified user', async ({ visit, route }) => {
 		hash.fake();
 
 		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: false });
@@ -97,7 +95,7 @@ test.group('Auth login', (group) => {
 		await page.getByLabel('Password').fill('Test123!');
 		await page.getByRole('button', { name: 'Login' }).click();
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="info"]');
 
 		await page.assertVisible(page.getByText('Please check your email to verify your account'));
 		await page.assertVisible(page.getByRole('button', { name: 'Resend email' }));
@@ -105,10 +103,7 @@ test.group('Auth login', (group) => {
 		hash.restore();
 	});
 
-	test('Show confirmation message returned by the server when submitting the form with verified user', async ({
-		visit,
-		route,
-	}) => {
+	test('Show confirmation message when submitting the form with verified user', async ({ visit, route }) => {
 		hash.fake();
 
 		const user = await User.create({ email: 'test@test.fr', password: 'Test123!', isVerified: true });
@@ -121,29 +116,9 @@ test.group('Auth login', (group) => {
 		await page.getByLabel('Password').fill('Test123!');
 		await page.getByRole('button', { name: 'Login' }).click();
 		await page.waitForURL(route('home'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="success"]');
 
 		await page.assertVisible(page.getByText('You have been logged in successfully'));
-
-		hash.restore();
-	});
-
-	test('Redirect to home page when accessing auth page when loggen in', async ({ visit, route, browserContext }) => {
-		hash.fake();
-
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
-
-		await browserContext.withGuard('web').loginAs(user);
-
-		const loginPage = await visit(route('auth.login'));
-		const registerPage = await visit(route('auth.register'));
-
-		await loginPage.assertPath(route('home'));
-		await registerPage.assertPath(route('home'));
 
 		hash.restore();
 	});
@@ -163,11 +138,7 @@ test.group('Auth login', (group) => {
 	test("Home page don't show login button when logged in", async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
+		const user = await UserFactory.apply('verified').create();
 
 		await browserContext.loginAs(user);
 
@@ -185,11 +156,7 @@ test.group('Auth login', (group) => {
 	}) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
+		const user = await UserFactory.apply('verified').create();
 
 		await browserContext.loginAs(user);
 

@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/triple-slash-reference */
+/// <reference path="../../adonisrc.ts" />
+/// <reference path="../../config/auth.ts" />
+
 import '../css/app.css';
 
 import { resolvePageComponent } from '@adonisjs/inertia/helpers';

@@ -30,7 +30,7 @@ export default class VerifyEmailNotification extends BaseMail {
 		this.message.to(this.user.email).text(
 			dedent(`Welcome to Con-panion!
 		
-				Please verify your email address by clicking the link below:
+				Please verify your email address by clicking the link below (valid for 1 day):
 				${verifyEmailUrl}
 		
 				Sincerely,

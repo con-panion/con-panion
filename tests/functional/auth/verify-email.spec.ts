@@ -4,6 +4,7 @@ import testUtils from '@adonisjs/core/services/test_utils';
 import mail from '@adonisjs/mail/services/main';
 import { test } from '@japa/runner';
 
+import { UserFactory } from '#database/factories/user-factory';
 import VerifyEmailNotification from '#mails/verify-email-notification';
 import User from '#models/user';
 import env from '#start/env';
@@ -13,17 +14,10 @@ import { NotificationType } from '#types/notification';
 test.group('Auth verify email', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
 
-	test('GET /verify-email/:email with incomplete signature returns error', async ({ assert, client }) => {
+	test('GET /verify-email/:email with incomplete signature returns error', async ({ assert, client, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		await user.save();
-
+		const user = await UserFactory.create();
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
@@ -36,7 +30,7 @@ test.group('Auth verify email', (group) => {
 		const response = await client.get(verifyEmailUrl).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -51,17 +45,10 @@ test.group('Auth verify email', (group) => {
 		hash.restore();
 	});
 
-	test('GET /verify-email/:email with expired signature returns error', async ({ assert, client }) => {
+	test('GET /verify-email/:email with expired signature returns error', async ({ assert, client, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		await user.save();
-
+		const user = await UserFactory.create();
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
@@ -76,7 +63,7 @@ test.group('Auth verify email', (group) => {
 		const response = await client.get(verifyEmailUrl).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -91,7 +78,7 @@ test.group('Auth verify email', (group) => {
 		hash.restore();
 	});
 
-	test('GET /verify-email/:email with unknown email returns error', async ({ client }) => {
+	test('GET /verify-email/:email with unknown email returns error', async ({ client, route }) => {
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
@@ -103,7 +90,7 @@ test.group('Auth verify email', (group) => {
 		const response = await client.get(verifyEmailUrl).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -112,17 +99,10 @@ test.group('Auth verify email', (group) => {
 		});
 	});
 
-	test('GET /verify-email/:email with verified user returns error', async ({ assert, client }) => {
+	test('GET /verify-email/:email with verified user returns error', async ({ assert, client, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
-
-		await user.save();
-
+		const user = await UserFactory.apply('verified').create();
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
@@ -134,7 +114,7 @@ test.group('Auth verify email', (group) => {
 		const response = await client.get(verifyEmailUrl).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -149,17 +129,10 @@ test.group('Auth verify email', (group) => {
 		hash.restore();
 	});
 
-	test('GET /verify-email/:email with valid signature verify user', async ({ assert, client }) => {
+	test('GET /verify-email/:email with valid signature verify user', async ({ assert, client, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		await user.save();
-
+		const user = await UserFactory.create();
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
@@ -171,7 +144,7 @@ test.group('Auth verify email', (group) => {
 		const response = await client.get(verifyEmailUrl).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Success,
@@ -196,7 +169,7 @@ test.group('Auth verify email', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -212,14 +185,7 @@ test.group('Auth verify email', (group) => {
 
 		const { mails } = mail.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
-
-		user.save();
-
+		const user = await UserFactory.apply('verified').create();
 		const response = await client
 			.post(route('auth.verify-email.resend'))
 			.json({ email: user.email })
@@ -227,7 +193,7 @@ test.group('Auth verify email', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -245,14 +211,7 @@ test.group('Auth verify email', (group) => {
 
 		const { mails } = mail.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		user.save();
-
+		const user = await UserFactory.create();
 		const response = await client
 			.post(route('auth.verify-email.resend'))
 			.json({ email: user.email })
@@ -260,7 +219,7 @@ test.group('Auth verify email', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 
 		let verifyEmailUrl: string | undefined;
 		mails.assertSent(VerifyEmailNotification, (email) => {
@@ -284,7 +243,7 @@ test.group('Auth verify email', (group) => {
 		const verifyResponse = await client.get(verifyEmailUrl!).withInertia();
 
 		verifyResponse.assertStatus(200);
-		verifyResponse.assertInertiaComponent('auth/login');
+		verifyResponse.assertRedirectsTo(route('auth.login'));
 		verifyResponse.assertInertiaProps({
 			notification: {
 				type: NotificationType.Success,

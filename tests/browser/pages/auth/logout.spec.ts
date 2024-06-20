@@ -2,10 +2,11 @@ import hash from '@adonisjs/core/services/hash';
 import testUtils from '@adonisjs/core/services/test_utils';
 import { test } from '@japa/runner';
 
-import User from '#models/user';
+import { UserFactory } from '#database/factories/user-factory';
 
 test.group('Auth logout', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
+
 	test("Home page don't show logout button when not logged in", async ({ visit, route }) => {
 		const page = await visit(route('home'));
 
@@ -15,11 +16,7 @@ test.group('Auth logout', (group) => {
 	test('Home page show logout button when logged in', async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
+		const user = await UserFactory.apply('verified').create();
 
 		await browserContext.loginAs(user);
 
@@ -29,25 +26,17 @@ test.group('Auth logout', (group) => {
 		await page.assertExists(logoutButton);
 
 		await logoutButton.click();
-		await page.waitForTimeout(100);
+		await page.waitForNavigation();
 
 		await page.assertNotExists(logoutButton);
 
 		hash.restore();
 	});
 
-	test('Show confirmation message returned by the server when submitting the form', async ({
-		visit,
-		route,
-		browserContext,
-	}) => {
+	test('Show confirmation message when submitting the form', async ({ visit, route, browserContext }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
+		const user = await UserFactory.apply('verified').create();
 
 		await browserContext.loginAs(user);
 
@@ -55,7 +44,7 @@ test.group('Auth logout', (group) => {
 
 		await page.getByRole('button', { name: 'Logout' }).click();
 		await page.waitForURL(route('home'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="success"]');
 
 		await page.assertVisible(page.getByText('You have been successfully logged out'));
 

@@ -35,7 +35,7 @@ test.group('Auth verify email', (group) => {
 		const page = await visit(verifyEmailUrl);
 
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('Invalid or expired verification link'));
 
@@ -67,7 +67,7 @@ test.group('Auth verify email', (group) => {
 		const page = await visit(verifyEmailUrl);
 
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('Invalid or expired verification link'));
 
@@ -86,7 +86,7 @@ test.group('Auth verify email', (group) => {
 		const page = await visit(verifyEmailUrl);
 
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('User not found'));
 	});
@@ -113,7 +113,7 @@ test.group('Auth verify email', (group) => {
 		const page = await visit(verifyEmailUrl);
 
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('Your email has already been verified'));
 
@@ -142,7 +142,7 @@ test.group('Auth verify email', (group) => {
 		const page = await visit(verifyEmailUrl);
 
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="success"]');
 
 		await page.assertVisible(page.getByText('Your email has been successfully verified'));
 
@@ -166,7 +166,7 @@ test.group('Auth verify email', (group) => {
 		await page.getByLabel('Email').fill(user.email);
 		await page.getByLabel('Password').fill('Test123!');
 		await page.getByRole('button', { name: 'Login' }).click();
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="info"]');
 
 		await page.getByRole('button', { name: 'Resend email' }).click();
 		await page.waitForNavigation();

@@ -12,6 +12,7 @@ import { izzyRoutePlugin } from '@izzyjs/route/plugins/japa';
 import { apiClient } from '@japa/api-client';
 import { assert } from '@japa/assert';
 import { browserClient } from '@japa/browser-client';
+import { expect } from '@japa/expect';
 import { pluginAdonisJS } from '@japa/plugin-adonisjs';
 import type { Config } from '@japa/runner/types';
 import { snapshot } from '@japa/snapshot';
@@ -48,6 +49,7 @@ export const plugins: Config['plugins'] = [
 	sessionBrowserClient(app),
 	authBrowserClient(app),
 	snapshot(),
+	expect(),
 ];
 
 /**

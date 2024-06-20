@@ -51,7 +51,7 @@ test.group('Auth register', (group) => {
 		await page.assertVisible(page.getByText('The password field format is invalid'));
 
 		await page.getByLabel('Confirm password').fill('not-the-same-password');
-		await page.assertVisible(page.getByText('The confirmPassword field and password field must be the same'));
+		await page.assertVisible(page.getByText('The passwordConfirmation field and password field must be the same'));
 	});
 
 	test('Remove error message when form field is valid', async ({ visit, route }) => {
@@ -80,7 +80,7 @@ test.group('Auth register', (group) => {
 	}) => {
 		const page = await visit(route('auth.register'));
 		const showPasswordButton = page.locator('input[name="password"] + svg');
-		const showConfirmPasswordButton = page.locator('input[name="confirmPassword"] + svg');
+		const showConfirmPasswordButton = page.locator('input[name="passwordConfirmation"] + svg');
 
 		await showPasswordButton.click();
 		assert.assert((await page.getByLabel('Confirm password').getAttribute('type')) === 'password');
@@ -90,7 +90,7 @@ test.group('Auth register', (group) => {
 		assert.assert((await page.getByLabel(/^Password$/).getAttribute('type')) === 'password');
 	});
 
-	test('Show error returned by the server when submitting form with existing email', async ({ visit, route }) => {
+	test('Show error message when submitting form with existing email', async ({ visit, route }) => {
 		hash.fake();
 
 		const alreadyRegisteredUser = await User.create({ email: 'test@test.fr', password: 'Test123!' });
@@ -103,15 +103,15 @@ test.group('Auth register', (group) => {
 		await page.getByLabel(/^Password$/).fill('Test123!');
 		await page.getByLabel('Confirm password').fill('Test123!');
 		await page.getByRole('button', { name: 'Create an account' }).click();
-		await page.waitForSelector('.toast');
+		await page.waitForSelector('.toast[data-type="error"]');
 
 		await page.assertVisible(page.getByText('The email has already been taken'));
-		await page.assertVisible(page.getByText('An error occurred while creating your account'));
+		await page.assertVisible(page.getByText('An error has occurred, please try again'));
 
 		hash.restore();
 	});
 
-	test('Show verify email notification returned by the server when submitting the form', async ({ visit, route }) => {
+	test('Show verify email notification when submitting the form', async ({ visit, route }) => {
 		hash.fake();
 
 		const page = await visit(route('auth.register'));
@@ -121,7 +121,7 @@ test.group('Auth register', (group) => {
 		await page.getByLabel('Confirm password').fill('Test123!');
 		await page.getByRole('button', { name: 'Create an account' }).click();
 		await page.waitForURL(route('auth.login'));
-		await page.waitForTimeout(100);
+		await page.waitForSelector('.toast[data-type="info"]');
 
 		await page.assertVisible(page.getByText('Please check your email to verify your account'));
 		await page.assertVisible(page.getByRole('button', { name: 'Resend email' }));

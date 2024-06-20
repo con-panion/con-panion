@@ -52,25 +52,67 @@ test.group('Auth register', (group) => {
 		response.assertInertiaProps({});
 	});
 
+	test('GET /register with logged user redirects to home', async ({ client, route }) => {
+		hash.fake();
+
+		const user = await UserFactory.create();
+		const response = await client.get(route('auth.register')).loginAs(user).withInertia();
+
+		response.assertStatus(200);
+		response.assertRedirectsTo(route('home'));
+		response.assertInertiaComponent('home');
+
+		hash.restore();
+	});
+
+	test('POST /register with empty body returns validation errors', async ({ assert, client, route }) => {
+		const { mails } = mail.fake();
+
+		const response = await client
+			.post(route('auth.register'))
+			.header('referrer', route('auth.register'))
+			.json({})
+			.withCsrfToken()
+			.withInertia();
+
+		response.assertStatus(200);
+		response.assertInertiaComponent('auth/register');
+		response.assertInertiaProps({
+			errors: {
+				email: ['The email field must be defined'],
+				password: ['The password field must be defined'],
+				passwordConfirmation: ['The passwordConfirmation field must be defined'],
+			},
+		});
+
+		const user = await User.first();
+
+		mails.assertNotSent(VerifyEmailNotification);
+
+		assert.notExists(user);
+	});
+
 	test('POST /register with invalid body returns validation errors', async ({ assert, client, route }) => {
 		const { mails } = mail.fake();
 
 		const response = await client
 			.post(route('auth.register'))
+			.header('referrer', route('auth.register'))
 			.json({
 				email: 'not-an-email',
 				password: 'password',
-				confirmPassword: 'not-the-same-password',
+				passwordConfirmation: 'not-the-same-password',
 			})
 			.withCsrfToken()
 			.withInertia();
 
 		response.assertStatus(200);
+		response.assertInertiaComponent('auth/register');
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be a valid email address'],
 				password: ['The password field format is invalid'],
-				confirmPassword: ['The confirmPassword field and password field must be the same'],
+				passwordConfirmation: ['The passwordConfirmation field and password field must be the same'],
 			},
 		});
 
@@ -95,13 +137,13 @@ test.group('Auth register', (group) => {
 			.json({
 				email: 'test@test.fr',
 				password: 'Test123!',
-				confirmPassword: 'Test123!',
+				passwordConfirmation: 'Test123!',
 			})
 			.withCsrfToken()
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Info,

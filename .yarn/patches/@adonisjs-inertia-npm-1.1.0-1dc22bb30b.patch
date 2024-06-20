@@ -1,0 +1,13 @@
+diff --git a/build/types-fb05P61I.d.ts b/build/types-fb05P61I.d.ts
+index f53205dde0c49afaf8aaa5183e83ff3546315bcf..e0d0070d9d7353b9b2f7e3a5f64f45888a92d684 100644
+--- a/build/types-fb05P61I.d.ts
++++ b/build/types-fb05P61I.d.ts
+@@ -191,7 +191,7 @@ interface SharedProps {
+  * }
+  * ```
+  */
+-type InferPageProps<Controller, Method extends keyof Controller> = Controller[Method] extends (...args: any[]) => any ? Simplify<Serialize<InferProps<Exclude<Awaited<ReturnType<Controller[Method]>>, string>['props']> & SharedProps>> : never;
++type InferPageProps<Controller, Method extends keyof Controller> = Controller[Method] extends (...args: any[]) => any ? Simplify<Serialize<InferProps<Exclude<Awaited<ReturnType<Controller[Method]>>, string | undefined>['props']> & SharedProps>> : never;
+ /**
+  * Signature for the method in the SSR entrypoint file
+  */

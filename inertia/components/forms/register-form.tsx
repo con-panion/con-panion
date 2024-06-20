@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { router, usePage } from '@inertiajs/react';
+import { route } from '@izzyjs/route/client';
 import { useForm } from 'react-hook-form';
 
 import { NotificationType } from '#types/notification';
@@ -23,7 +24,7 @@ export function RegisterForm() {
 		defaultValues: {
 			email: '',
 			password: '',
-			confirmPassword: '',
+			passwordConfirmation: '',
 		},
 	});
 
@@ -44,9 +45,9 @@ export function RegisterForm() {
 	}, [pageProps.errors]);
 
 	function onSubmit(data: RegisterSchema) {
-		router.post('/register', data, {
+		router.post(route('auth.register').url, data, {
 			onError: () => {
-				handleNotification({ type: NotificationType.Error, message: 'An error occurred while creating your account' });
+				handleNotification({ type: NotificationType.Error, message: 'An error has occurred, please try again' });
 			},
 		});
 	}
@@ -112,7 +113,7 @@ export function RegisterForm() {
 						<div className="grid gap-2">
 							<FormField
 								control={form.control}
-								name="confirmPassword"
+								name="passwordConfirmation"
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Confirm password</FormLabel>
