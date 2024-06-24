@@ -38,9 +38,9 @@ test.group('Auth verify email', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isFalse(updatedUser!.isVerified);
+		assert.isFalse(updatedUser.isVerified);
 
 		hash.restore();
 	});
@@ -71,9 +71,9 @@ test.group('Auth verify email', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isFalse(updatedUser!.isVerified);
+		assert.isFalse(updatedUser.isVerified);
 
 		hash.restore();
 	});
@@ -122,9 +122,9 @@ test.group('Auth verify email', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isTrue(updatedUser!.isVerified);
+		assert.isTrue(updatedUser.isVerified);
 
 		hash.restore();
 	});
@@ -152,9 +152,9 @@ test.group('Auth verify email', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isTrue(updatedUser!.isVerified);
+		assert.isTrue(updatedUser.isVerified);
 
 		hash.restore();
 	});
@@ -254,9 +254,9 @@ test.group('Auth verify email', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isTrue(updatedUser!.isVerified);
+		assert.isTrue(updatedUser.isVerified);
 
 		hash.restore();
 	});

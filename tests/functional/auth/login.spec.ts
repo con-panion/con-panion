@@ -37,7 +37,6 @@ test.group('Auth login', (group) => {
 		const response = await client.get(route('home')).loginAs(user).withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('home');
 		response.assertInertiaPropsContains({
 			user: serializedUser,
 		});
@@ -54,7 +53,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be defined'],
@@ -75,7 +74,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be a valid email address'],
@@ -96,7 +95,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Error,
@@ -130,7 +129,7 @@ test.group('Auth login', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/login');
+		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Info,

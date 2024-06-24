@@ -144,43 +144,46 @@ test.group('Auth password reset', (group) => {
 			email.message.assertTo(user.email);
 			email.message.assertSubject('Password Reset Request');
 
-			const passwordResetUrlWithoutToken = router
+			const passwordResetUrl = router
 				.builder()
 				.prefixUrl(env.get('APP_URL'))
-				.params({ token: '' })
+				.params({ token: stringToken })
 				.make('auth.password-reset');
 
-			assert.equal(
-				email.message
-					.toJSON()
-					.message.text?.toString()
-					.match(new RegExp(`^${passwordResetUrlWithoutToken}(.{64})$`, 'm'))?.[1],
-				stringToken,
-			);
+			assert.isTrue(email.message.toJSON().message.text?.toString().includes(passwordResetUrl));
 
 			return true;
 		});
 
-		const token = await Token.findBy('token', stringToken);
-		const updatedUser = await User.find(user.id);
-
-		if (!token || !updatedUser) {
-			return assert.fail();
-		}
+		const token = await Token.findByOrFail('token', stringToken);
+		const updatedUser = await User.findOrFail(user.id);
 
 		assert.equal(token.type, 'password-reset');
 		assert.equal(token.userId, updatedUser.id);
 		assert.isAbove(token.expiresAt, DateTime.now());
 
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().firstOrFail();
 
 		assert.notEmpty(userTokens);
 		assert.equal(userTokens[0].id, token.id);
-		assert.exists(userPasswordResetToken);
-		assert.equal(userPasswordResetToken!.id, token.id);
+		assert.equal(userPasswordResetToken.id, token.id);
 
 		app.container.restore(PasswordResetService);
+		hash.restore();
+	});
+
+	test('GET /password-reset/:token with logged user redirects to home', async ({ client, route }) => {
+		hash.fake();
+
+		const passwordResetService = new PasswordResetService();
+		const user = await UserFactory.create();
+		const token = await passwordResetService.generateToken(user);
+		const response = await client.get(route('auth.password-reset', { token })).loginAs(user).withInertia();
+
+		response.assertStatus(200);
+		response.assertRedirectsTo(route('home'));
+
 		hash.restore();
 	});
 
@@ -335,9 +338,9 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.equal(updatedUser!.password, user.password);
+		assert.equal(updatedUser.password, user.password);
 
 		hash.restore();
 	});
@@ -360,7 +363,7 @@ test.group('Auth password reset', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/password-reset');
+		response.assertRedirectsTo(route('auth.password-reset', { token }));
 		response.assertInertiaPropsContains({
 			errors: {
 				password: ['The password field must be defined'],
@@ -368,9 +371,9 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.equal(updatedUser!.password, user.password);
+		assert.equal(updatedUser.password, user.password);
 
 		hash.restore();
 	});
@@ -401,9 +404,9 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.equal(updatedUser!.password, user.password);
+		assert.equal(updatedUser.password, user.password);
 
 		hash.restore();
 	});
@@ -442,11 +445,7 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
-
-		if (!updatedUser) {
-			return assert.fail();
-		}
+		const updatedUser = await User.findOrFail(user.id);
 
 		assert.notEqual(updatedUser.password, user.password);
 		assert.isTrue(await hash.verify(updatedUser.password, 'Test123!'));
@@ -460,7 +459,6 @@ test.group('Auth password reset', (group) => {
 		assert.notExists(userPasswordResetToken);
 
 		app.container.restore(PasswordResetService);
-
 		hash.restore();
 	});
 
@@ -516,21 +514,15 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
-
-		if (!updatedUser) {
-			return assert.fail();
-		}
-
+		const updatedUser = await User.findOrFail(user.id);
 		const token = await Token.findBy('token', stringToken);
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().firstOrFail();
 
 		assert.notExists(token);
 		assert.notEmpty(userTokens);
 		assert.notEqual(userTokens[0].token, stringToken);
-		assert.exists(userPasswordResetToken);
-		assert.notEqual(userPasswordResetToken!.token, stringToken);
+		assert.notEqual(userPasswordResetToken.token, stringToken);
 	});
 
 	test('PATCH /password-reset/:token with used token shows error notification and redirects to /forgot-password', async ({
@@ -566,11 +558,7 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
-
-		if (!updatedUser) {
-			return assert.fail();
-		}
+		const updatedUser = await User.findOrFail(user.id);
 
 		assert.isFalse(await hash.verify(updatedUser.password, 'Test456!'));
 
@@ -614,9 +602,9 @@ test.group('Auth password reset', (group) => {
 			},
 		});
 
-		const updatedUser = await User.find(user.id);
+		const updatedUser = await User.findOrFail(user.id);
 
-		assert.isFalse(await hash.verify(updatedUser!.password, 'Test456!'));
+		assert.isFalse(await hash.verify(updatedUser.password, 'Test456!'));
 
 		hash.restore();
 	});

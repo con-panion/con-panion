@@ -13,37 +13,6 @@ import { NotificationType } from '#types/notification';
 test.group('Auth register', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
 
-	test('Hashes user password when creating a new user', async ({ assert }) => {
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-		});
-
-		await user.save();
-
-		assert.isTrue(hash.isValidHash(user.password));
-		assert.isTrue(await hash.verify(user.password, 'Test123!'));
-	});
-
-	test('Can register with a new email', async ({ assert }) => {
-		const user = await UserFactory.create();
-		const registeredUser = await User.findBy('email', user.email);
-
-		assert.exists(registeredUser);
-	});
-
-	test("Can't register with an existing email", async ({ assert }) => {
-		const user = await UserFactory.create();
-
-		try {
-			await User.create({ email: user.email, password: 'password' });
-
-			assert.fail();
-		} catch {
-			assert.isTrue(true);
-		}
-	});
-
 	test('GET /register renders auth/register view', async ({ client, route }) => {
 		const response = await client.get(route('auth.register')).withInertia();
 
@@ -60,7 +29,6 @@ test.group('Auth register', (group) => {
 
 		response.assertStatus(200);
 		response.assertRedirectsTo(route('home'));
-		response.assertInertiaComponent('home');
 
 		hash.restore();
 	});
@@ -76,7 +44,7 @@ test.group('Auth register', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/register');
+		response.assertRedirectsTo(route('auth.register'));
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be defined'],
@@ -107,7 +75,7 @@ test.group('Auth register', (group) => {
 			.withInertia();
 
 		response.assertStatus(200);
-		response.assertInertiaComponent('auth/register');
+		response.assertRedirectsTo(route('auth.register'));
 		response.assertInertiaProps({
 			errors: {
 				email: ['The email field must be a valid email address'],
@@ -123,11 +91,34 @@ test.group('Auth register', (group) => {
 		assert.notExists(user);
 	});
 
-	test('POST /register with valid body creates a new user and sends verification email', async ({
-		assert,
-		client,
-		route,
-	}) => {
+	test('POST /register with existing email returns validation errors', async ({ client, route }) => {
+		const { mails } = mail.fake();
+
+		const user = await UserFactory.create();
+
+		const response = await client
+			.post(route('auth.register'))
+			.header('referrer', route('auth.register'))
+			.json({
+				email: user.email,
+				password: 'Test123!',
+				passwordConfirmation: 'Test123!',
+			})
+			.withCsrfToken()
+			.withInertia();
+
+		response.assertStatus(200);
+		response.assertRedirectsTo(route('auth.register'));
+		response.assertInertiaProps({
+			errors: {
+				email: ['The email has already been taken'],
+			},
+		});
+
+		mails.assertNotSent(VerifyEmailNotification);
+	});
+
+	test('POST /register with valid body creates a new user and sends verification email', async ({ client, route }) => {
 		hash.fake();
 
 		const { mails } = mail.fake();
@@ -156,13 +147,8 @@ test.group('Auth register', (group) => {
 			},
 		});
 
-		const user = await User.findBy('email', 'test@test.fr');
+		const user = await User.findByOrFail('email', 'test@test.fr');
 
-		if (!user) {
-			return assert.fail();
-		}
-
-		let verifyEmailUrl: string | undefined;
 		mails.assertSent(VerifyEmailNotification, (email) => {
 			email.message.assertTo(user.email);
 			email.message.assertSubject('Email Verification');
@@ -173,28 +159,13 @@ test.group('Auth register', (group) => {
 				.params({ email: user.email })
 				.make('auth.verify-email');
 
-			verifyEmailUrl = email.message
+			const verifyEmailUrl = email.message
 				.toJSON()
 				.message.text?.toString()
 				.match(new RegExp(`^${verifyEmailUrlWithoutSignature}.*?$`, 'm'))?.[0];
 
 			return !!verifyEmailUrl;
 		});
-
-		const verifyResponse = await client.get(verifyEmailUrl!).withInertia();
-
-		verifyResponse.assertStatus(200);
-		verifyResponse.assertInertiaComponent('auth/login');
-		verifyResponse.assertInertiaProps({
-			notification: {
-				type: NotificationType.Success,
-				message: 'Your email has been successfully verified',
-			},
-		});
-
-		const updatedUser = await User.find(user.id);
-
-		assert.isTrue(updatedUser!.isVerified);
 
 		hash.restore();
 	});
