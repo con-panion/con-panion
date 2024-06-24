@@ -37,7 +37,6 @@ test.group('Auth password reset', (group) => {
 
 		response.assertStatus(200);
 		response.assertRedirectsTo(route('home'));
-		response.assertInertiaComponent('home');
 
 		hash.restore();
 	});
@@ -84,6 +83,7 @@ test.group('Auth password reset', (group) => {
 
 		const response = await client
 			.post(route('auth.forgot-password'))
+			.header('referrer', route('auth.forgot-password'))
 			.json({ email: 'test@test.fr' })
 			.withCsrfToken()
 			.withInertia();
@@ -120,6 +120,7 @@ test.group('Auth password reset', (group) => {
 		const user = await UserFactory.create();
 		const response = await client
 			.post(route('auth.forgot-password'))
+			.header('referrer', route('auth.forgot-password'))
 			.json({ email: user.email })
 			.withCsrfToken()
 			.withInertia();

@@ -17,7 +17,6 @@ export default class RegisterController {
 		const user = await User.create({ email, password });
 
 		await user.save();
-
 		await mail.send(new VerifyEmailNotification(user));
 
 		session.flash('notification', {

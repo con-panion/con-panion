@@ -65,7 +65,7 @@ export default class VerifyEmailController {
 				message: 'User not found',
 			});
 
-			response.redirect().toRoute('auth.login');
+			response.redirect().back();
 
 			return;
 		}
@@ -76,13 +76,13 @@ export default class VerifyEmailController {
 				message: 'Your email has already been verified',
 			});
 
-			response.redirect().toRoute('auth.login');
+			response.redirect().back();
 
 			return;
 		}
 
 		mail.send(new VerifyEmailNotification(user));
 
-		response.redirect().toRoute('auth.login');
+		response.redirect().back();
 	}
 }

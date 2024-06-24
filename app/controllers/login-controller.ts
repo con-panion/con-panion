@@ -23,7 +23,7 @@ export default class LoginController {
 				actionBody: { email: user.email },
 			});
 
-			response.redirect().toRoute('auth.login');
+			response.redirect().back();
 
 			return;
 		}

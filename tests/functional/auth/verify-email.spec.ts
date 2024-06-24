@@ -164,6 +164,7 @@ test.group('Auth verify email', (group) => {
 
 		const response = await client
 			.post(route('auth.verify-email.resend'))
+			.header('referrer', route('auth.login'))
 			.json({ email: 'wrong@email.fr' })
 			.withCsrfToken()
 			.withInertia();
@@ -188,6 +189,7 @@ test.group('Auth verify email', (group) => {
 		const user = await UserFactory.apply('verified').create();
 		const response = await client
 			.post(route('auth.verify-email.resend'))
+			.header('referrer', route('auth.login'))
 			.json({ email: user.email })
 			.withCsrfToken()
 			.withInertia();
@@ -214,6 +216,7 @@ test.group('Auth verify email', (group) => {
 		const user = await UserFactory.create();
 		const response = await client
 			.post(route('auth.verify-email.resend'))
+			.header('referrer', route('auth.login'))
 			.json({ email: user.email })
 			.withCsrfToken()
 			.withInertia();

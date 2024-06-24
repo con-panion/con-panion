@@ -29,7 +29,7 @@ export default class ResetPasswordsController {
 			message: 'If the email exists in our system, we will send you an email with instructions to reset your password',
 		});
 
-		response.redirect().toRoute('auth.forgot-password');
+		response.redirect().back();
 	}
 
 	/* eslint-disable-next-line @typescript-eslint/member-ordering */
