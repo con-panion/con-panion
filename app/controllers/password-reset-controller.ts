@@ -96,7 +96,7 @@ export default class ResetPasswordsController {
 		const { password } = await passwordResetValidator.validate(request.all());
 
 		await user.merge({ password }).save();
-		await passwordResetService.clearTokens(user);
+		await passwordResetService.clearPreviousToken(user);
 
 		session.flash('notification', {
 			type: NotificationType.Success,

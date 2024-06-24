@@ -126,7 +126,7 @@ test.group('Auth password reset', (group) => {
 			.withInertia();
 
 		expect(mockPasswordResetService.generateToken).toHaveBeenCalledTimes(1);
-		expect(mockPasswordResetService.clearTokens).toHaveBeenCalledTimes(1);
+		expect(mockPasswordResetService.clearPreviousToken).toHaveBeenCalledTimes(1);
 
 		response.assertStatus(200);
 		response.assertRedirectsTo(route('auth.forgot-password'));
@@ -173,12 +173,12 @@ test.group('Auth password reset', (group) => {
 		assert.isAbove(token.expiresAt, DateTime.now());
 
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetTokens = await updatedUser.related('passwordResetTokens').query();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
 
-		assert.equal(userTokens.length, 1);
+		assert.notEmpty(userTokens);
 		assert.equal(userTokens[0].id, token.id);
-		assert.equal(userPasswordResetTokens.length, 1);
-		assert.equal(userPasswordResetTokens[0].id, token.id);
+		assert.exists(userPasswordResetToken);
+		assert.equal(userPasswordResetToken!.id, token.id);
 
 		app.container.restore(PasswordResetService);
 		hash.restore();
@@ -431,7 +431,7 @@ test.group('Auth password reset', (group) => {
 			.withCsrfToken()
 			.withInertia();
 
-		expect(mockPasswordResetService.clearTokens).toHaveBeenCalledTimes(1);
+		expect(mockPasswordResetService.clearPreviousToken).toHaveBeenCalledTimes(1);
 
 		response.assertStatus(200);
 		response.assertRedirectsTo(route('auth.login'));
@@ -453,11 +453,11 @@ test.group('Auth password reset', (group) => {
 
 		const token = await Token.findBy('token', stringToken);
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetTokens = await updatedUser.related('passwordResetTokens').query();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
 
 		assert.notExists(token);
-		assert.equal(userTokens.length, 0);
-		assert.equal(userPasswordResetTokens.length, 0);
+		assert.empty(userTokens);
+		assert.notExists(userPasswordResetToken);
 
 		app.container.restore(PasswordResetService);
 
@@ -524,13 +524,13 @@ test.group('Auth password reset', (group) => {
 
 		const token = await Token.findBy('token', stringToken);
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetTokens = await updatedUser.related('passwordResetTokens').query();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
 
 		assert.notExists(token);
-		assert.equal(userTokens.length, 1);
+		assert.notEmpty(userTokens);
 		assert.notEqual(userTokens[0].token, stringToken);
-		assert.equal(userPasswordResetTokens.length, 1);
-		assert.notEqual(userPasswordResetTokens[0].token, stringToken);
+		assert.exists(userPasswordResetToken);
+		assert.notEqual(userPasswordResetToken!.token, stringToken);
 	});
 
 	test('PATCH /password-reset/:token with used token shows error notification and redirects to /forgot-password', async ({
@@ -576,11 +576,11 @@ test.group('Auth password reset', (group) => {
 
 		const token = await Token.findBy('token', stringToken);
 		const userTokens = await updatedUser.related('tokens').query();
-		const userPasswordResetTokens = await updatedUser.related('passwordResetTokens').query();
+		const userPasswordResetToken = await updatedUser.related('passwordResetToken').query().first();
 
 		assert.notExists(token);
-		assert.equal(userTokens.length, 0);
-		assert.equal(userPasswordResetTokens.length, 0);
+		assert.empty(userTokens);
+		assert.notExists(userPasswordResetToken);
 
 		hash.restore();
 	});

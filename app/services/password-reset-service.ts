@@ -18,7 +18,7 @@ export default class PasswordResetService {
 			return token;
 		}
 
-		await this.clearTokens(user);
+		await this.clearPreviousToken(user);
 
 		const record = await user.related('tokens').create({
 			type: 'password-reset',
@@ -30,12 +30,12 @@ export default class PasswordResetService {
 	}
 
 	/**
-	 * Clear all password reset tokens for a given user
+	 * Clear previous password reset token for a given user
 	 *
-	 * @param user The user to clear the tokens for
+	 * @param user The user to clear the previous token for
 	 */
-	async clearTokens(user: User) {
-		await user.related('passwordResetTokens').query().delete();
+	async clearPreviousToken(user: User) {
+		await user.related('passwordResetToken').query().delete();
 	}
 
 	/**

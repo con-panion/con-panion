@@ -2,8 +2,8 @@ import { withAuthFinder } from '@adonisjs/auth/mixins/lucid';
 import { DbRememberMeTokensProvider } from '@adonisjs/auth/session';
 import { compose } from '@adonisjs/core/helpers';
 import hash from '@adonisjs/core/services/hash';
-import { BaseModel, column, hasMany } from '@adonisjs/lucid/orm';
-import type { HasMany } from '@adonisjs/lucid/types/relations';
+import { BaseModel, column, hasMany, hasOne } from '@adonisjs/lucid/orm';
+import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations';
 import { DateTime } from 'luxon';
 
 import Token from './token.js';
@@ -40,8 +40,8 @@ export default class User extends compose(BaseModel, AuthFinder) {
 	@hasMany(() => Token)
 	declare tokens: HasMany<typeof Token>;
 
-	@hasMany(() => Token, {
-		onQuery: (query) => query.where('type', 'password-reset'),
+	@hasOne(() => Token, {
+		onQuery: (query) => query.where('type', 'password-reset').first(),
 	})
-	declare passwordResetTokens: HasMany<typeof Token>;
+	declare passwordResetToken: HasOne<typeof Token>;
 }
