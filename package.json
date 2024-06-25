@@ -15,9 +15,11 @@
 		"test:all": "npm run test:functional && npm run test:chromium && npm run test:firefox && npm run test:webkit",
 		"test": "node ace test",
 		"lint": "eslint .",
+		"lint-staged": "lint-staged",
 		"format": "prettier --write .",
 		"typecheck": "tsc --noEmit",
-		"ace": "node ace"
+		"ace": "node ace",
+		"postinstall": "husky"
 	},
 	"imports": {
 		"#controllers/*": "./app/controllers/*.js",
@@ -72,7 +74,9 @@
 		"eslint-plugin-tsdoc": "^0.3.0",
 		"eslint-plugin-unicorn": "^54.0.0",
 		"hot-hook": "^0.2.6",
+		"husky": "^9.0.11",
 		"jest-mock": "^29.7.0",
+		"lint-staged": "^15.2.7",
 		"pino-pretty": "^11.2.1",
 		"playwright": "^1.44.1",
 		"prettier": "^3.3.2",
