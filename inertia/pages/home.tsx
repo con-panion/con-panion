@@ -4,7 +4,6 @@ import { route } from '@izzyjs/route/client';
 import type User from '#models/user';
 
 import { LogoutForm } from '~/components/forms/logout-form';
-import { Notifications } from '~/components/notifications';
 
 export default function Home() {
 	const { user } = usePage().props as unknown as { user: User | null };
@@ -27,7 +26,6 @@ export default function Home() {
 					</Link>
 				</>
 			)}
-			<Notifications />
 		</>
 	);
 }
