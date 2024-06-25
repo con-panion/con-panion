@@ -76,8 +76,8 @@ jobs:
         image: sj26/mailcatcher
 
         ports:
-            - '1080:1080'
-            - '1025:1025'
+          - '1080:1080'
+          - '1025:1025'
 
     steps:
       - name: Check out repository code

@@ -2,18 +2,18 @@ name: Lint
 on:
   push:
     branches:
-      - "*"
+      - '*'
     paths-ignore:
-      - "*.{md,txt}"
+      - '*.{md,txt}'
       - LICENSE
       - .*config
     tags-ignore:
-      - "*"
+      - '*'
   pull_request:
     branches:
-      - "*"
+      - '*'
     paths-ignore:
-      - "*.{md,txt}"
+      - '*.{md,txt}'
       - LICENSE
       - .*config
 
