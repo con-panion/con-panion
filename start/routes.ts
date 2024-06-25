@@ -27,9 +27,11 @@ router.post('/login', [LoginController]).as('auth.login');
 
 router.delete('/logout', [LogoutController]).as('auth.logout');
 
-router.get('/verify-email', [VerifyEmailController]);
-router.get('/verify-email/:email', [VerifyEmailController]).as('auth.verify-email');
+router.get('/verify-email', [VerifyEmailController, 'render']).middleware(middleware.guest());
+router.get('/verify-email/:token', [VerifyEmailController, 'render']).middleware(middleware.guest());
 router.post('/verify-email/resend', [VerifyEmailController, 'resend']).as('auth.verify-email.resend');
+router.post('/verify-email', [VerifyEmailController]);
+router.post('/verify-email/:token', [VerifyEmailController]).as('auth.verify-email');
 
 router.get('/forgot-password', [PasswordResetController, 'forgot']).middleware(middleware.guest());
 router.post('/forgot-password', [PasswordResetController, 'sendMail']).as('auth.forgot-password');

@@ -123,7 +123,7 @@ test.group('Auth register', (group) => {
 		await page.waitForURL(route('auth.login'));
 		await page.waitForSelector('.toast[data-type="info"]');
 
-		await page.assertVisible(page.getByText('Please check your email to verify your account'));
+		await page.assertVisible(page.getByText('Please check your emails to verify your account'));
 		await page.assertVisible(page.getByRole('button', { name: 'Resend email' }));
 
 		hash.restore();

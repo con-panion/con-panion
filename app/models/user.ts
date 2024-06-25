@@ -44,4 +44,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
 		onQuery: (query) => query.where('type', 'password-reset').first(),
 	})
 	declare passwordResetToken: HasOne<typeof Token>;
+
+	@hasOne(() => Token, {
+		onQuery: (query) => query.where('type', 'verify-email').first(),
+	})
+	declare verifyEmailToken: HasOne<typeof Token>;
 }

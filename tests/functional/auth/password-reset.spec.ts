@@ -462,7 +462,7 @@ test.group('Auth password reset', (group) => {
 		hash.restore();
 	});
 
-	test('PATCH /password-reset/:token with used token shows error notification and redirects to /forgot-password', async ({
+	test('GET /password-reset/:token with used token shows error notification and redirects to /forgot-password', async ({
 		client,
 		route,
 	}) => {

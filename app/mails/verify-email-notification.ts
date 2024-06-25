@@ -9,7 +9,10 @@ export default class VerifyEmailNotification extends BaseMail {
 	from = env.get('APP_EMAIL');
 	subject = 'Email Verification';
 
-	constructor(public user: User) {
+	constructor(
+		public user: User,
+		public token: string,
+	) {
 		super();
 	}
 
@@ -21,11 +24,8 @@ export default class VerifyEmailNotification extends BaseMail {
 		const verifyEmailUrl = router
 			.builder()
 			.prefixUrl(env.get('APP_URL'))
-			.params({ email: this.user.email })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			});
+			.params({ token: this.token })
+			.make('auth.verify-email');
 
 		this.message.to(this.user.email).text(
 			dedent(`Welcome to Con-panion!

@@ -1,13 +1,18 @@
+import app from '@adonisjs/core/services/app';
 import hash from '@adonisjs/core/services/hash';
 import router from '@adonisjs/core/services/router';
 import testUtils from '@adonisjs/core/services/test_utils';
 import mail from '@adonisjs/mail/services/main';
 import { test } from '@japa/runner';
+import { DateTime } from 'luxon';
 
 import { UserFactory } from '#database/factories/user-factory';
 import VerifyEmailNotification from '#mails/verify-email-notification';
+import Token from '#models/token';
 import User from '#models/user';
+import VerifyEmailService from '#services/verify-email-service';
 import env from '#start/env';
+import MockVerifyEmailService from '#test-helpers/mocks/mock-verify-email-service';
 import { NotificationType } from '#types/notification';
 
 test.group('Auth register', (group) => {
@@ -118,10 +123,21 @@ test.group('Auth register', (group) => {
 		mails.assertNotSent(VerifyEmailNotification);
 	});
 
-	test('POST /register with valid body creates a new user and sends verification email', async ({ client, route }) => {
+	test('POST /register with valid body creates a new user and sends verification email', async ({
+		assert,
+		client,
+		route,
+		expect,
+	}) => {
 		hash.fake();
 
 		const { mails } = mail.fake();
+
+		const mockVerifyEmailService = new MockVerifyEmailService();
+
+		app.container.swap(VerifyEmailService, () => {
+			return mockVerifyEmailService;
+		});
 
 		const response = await client
 			.post(route('auth.register'))
@@ -133,12 +149,15 @@ test.group('Auth register', (group) => {
 			.withCsrfToken()
 			.withInertia();
 
+		expect(mockVerifyEmailService.generateToken).toHaveBeenCalledTimes(1);
+		expect(mockVerifyEmailService.clearPreviousToken).toHaveBeenCalledTimes(1);
+
 		response.assertStatus(200);
 		response.assertRedirectsTo(route('auth.login'));
 		response.assertInertiaProps({
 			notification: {
 				type: NotificationType.Info,
-				message: 'Please check your email to verify your account',
+				message: 'Please check your emails to verify your account',
 				actionLabel: 'Resend email',
 				actionUrl: '/verify-email/resend',
 				actionBody: {
@@ -148,25 +167,38 @@ test.group('Auth register', (group) => {
 		});
 
 		const user = await User.findByOrFail('email', 'test@test.fr');
+		const stringToken = (await mockVerifyEmailService.generateToken.mock.results[0].value) as string;
 
-		mails.assertSent(VerifyEmailNotification, (email) => {
+		mails.assertQueued(VerifyEmailNotification, (email) => {
 			email.message.assertTo(user.email);
 			email.message.assertSubject('Email Verification');
 
-			const verifyEmailUrlWithoutSignature = router
+			const verifyEmailUrl = router
 				.builder()
 				.prefixUrl(env.get('APP_URL'))
-				.params({ email: user.email })
+				.params({ token: stringToken })
 				.make('auth.verify-email');
 
-			const verifyEmailUrl = email.message
-				.toJSON()
-				.message.text?.toString()
-				.match(new RegExp(`^${verifyEmailUrlWithoutSignature}.*?$`, 'm'))?.[0];
+			assert.isTrue(email.message.toJSON().message.text?.toString().includes(verifyEmailUrl));
 
-			return !!verifyEmailUrl;
+			return true;
 		});
 
+		const token = await Token.findByOrFail('token', stringToken);
+		const updatedUser = await User.findOrFail(user.id);
+
+		assert.equal(token.type, 'verify-email');
+		assert.equal(token.userId, updatedUser.id);
+		assert.isAbove(token.expiresAt, DateTime.now());
+
+		const userTokens = await updatedUser.related('tokens').query();
+		const userVerifyEmailToken = await updatedUser.related('verifyEmailToken').query().firstOrFail();
+
+		assert.notEmpty(userTokens);
+		assert.equal(userTokens[0].id, token.id);
+		assert.equal(userVerifyEmailToken.id, token.id);
+
+		app.container.restore(VerifyEmailService);
 		hash.restore();
 	});
 });

@@ -1,16 +1,21 @@
+import { inject } from '@adonisjs/core';
 import type { HttpContext } from '@adonisjs/core/http';
 import mail from '@adonisjs/mail/services/main';
 
 import VerifyEmailNotification from '#mails/verify-email-notification';
 import User from '#models/user';
+import VerifyEmailService from '#services/verify-email-service';
 import { NotificationType } from '#types/notification';
 
 export default class VerifyEmailController {
-	async handle({ params, request, response, session }: HttpContext) {
-		if (!request.hasValidSignature('verify-email')) {
+	@inject()
+	async render({ params, session, response, inertia }: HttpContext, verifyEmailService: VerifyEmailService) {
+		const token = params.token as string;
+
+		if (!token) {
 			session.flash('notification', {
 				type: NotificationType.Error,
-				message: 'Invalid or expired verification link',
+				message: 'Verify email token missing',
 			});
 
 			response.redirect().toRoute('auth.login');
@@ -18,13 +23,43 @@ export default class VerifyEmailController {
 			return;
 		}
 
-		const email = params.email as string;
-		const user = await User.findBy('email', email);
+		const isTokenValid = await verifyEmailService.verifyToken(token);
+
+		if (!isTokenValid) {
+			session.flash('notification', {
+				type: NotificationType.Error,
+				message: 'Invalid or expired verify email token',
+			});
+
+			response.redirect().toRoute('auth.login');
+
+			return;
+		}
+
+		return inertia.render('auth/verify-email', { token });
+	}
+
+	@inject()
+	async handle({ params, response, session }: HttpContext, verifyEmailService: VerifyEmailService) {
+		const token = params.token as string;
+
+		if (!token) {
+			session.flash('notification', {
+				type: NotificationType.Error,
+				message: 'verify email token missing',
+			});
+
+			response.redirect().toRoute('auth.login');
+
+			return;
+		}
+
+		const user = await verifyEmailService.getUserByToken(token);
 
 		if (!user) {
 			session.flash('notification', {
 				type: NotificationType.Error,
-				message: 'User not found',
+				message: 'Invalid/expired verify email token or user not found',
 			});
 
 			response.redirect().toRoute('auth.login');
@@ -43,9 +78,8 @@ export default class VerifyEmailController {
 			return;
 		}
 
-		user.isVerified = true;
-
-		await user.save();
+		await user.merge({ isVerified: true }).save();
+		await verifyEmailService.clearPreviousToken(user);
 
 		session.flash('notification', {
 			type: NotificationType.Success,
@@ -55,7 +89,8 @@ export default class VerifyEmailController {
 		response.redirect().toRoute('auth.login');
 	}
 
-	async resend({ request, session, response }: HttpContext) {
+	@inject()
+	async resend({ request, session, response }: HttpContext, verifyEmailService: VerifyEmailService) {
 		const email = request.input('email') as string;
 		const user = await User.findBy('email', email);
 
@@ -81,7 +116,9 @@ export default class VerifyEmailController {
 			return;
 		}
 
-		mail.send(new VerifyEmailNotification(user));
+		const token = await verifyEmailService.generateToken(user);
+
+		await mail.sendLater(new VerifyEmailNotification(user, token));
 
 		response.redirect().back();
 	}

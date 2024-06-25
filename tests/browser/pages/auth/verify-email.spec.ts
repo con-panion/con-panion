@@ -1,146 +1,122 @@
 import hash from '@adonisjs/core/services/hash';
-import router from '@adonisjs/core/services/router';
 import testUtils from '@adonisjs/core/services/test_utils';
 import mail from '@adonisjs/mail/services/main';
 import { test } from '@japa/runner';
 
+import { UserFactory } from '#database/factories/user-factory';
 import VerifyEmailNotification from '#mails/verify-email-notification';
 import User from '#models/user';
-import env from '#start/env';
+import VerifyEmailService from '#services/verify-email-service';
 import { timeTravel } from '#test-helpers/time-travel';
 
 test.group('Auth verify email', (group) => {
 	group.each.setup(() => testUtils.db().withGlobalTransaction());
 
-	test('Show error notification when verifying email with incomplete signature', async ({ visit, route }) => {
-		hash.fake();
-
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		await user.save();
-
-		const verifyEmailUrl = router
-			.builder()
-			.prefixUrl(env.get('APP_URL'))
-			.params({ email: user.email })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			})
-			.slice(0, -2);
-		const page = await visit(verifyEmailUrl);
+	test('Verify email without token page show error message and redirects to /login', async ({ visit, route }) => {
+		const page = await visit(route('auth.verify-email', { token: '' }));
 
 		await page.waitForURL(route('auth.login'));
 		await page.waitForSelector('.toast[data-type="error"]');
 
-		await page.assertVisible(page.getByText('Invalid or expired verification link'));
-
-		hash.restore();
+		await page.assertVisible(page.getByText('Verify email token missing'));
 	});
 
-	test('Show error notification when verifying email with expired signature', async ({ visit, route }) => {
+	test('Verify email with invalid token page show error message and redirects to /login', async ({ visit, route }) => {
+		const page = await visit(route('auth.verify-email', { token: 'invalid-token' }));
+
+		await page.waitForURL(route('auth.login'));
+		await page.waitForSelector('.toast[data-type="error"]');
+
+		await page.assertVisible(page.getByText('Invalid or expired verify email token'));
+	});
+
+	test('Verify email with expired token page show error message and redirects to /login', async ({ visit, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
-
-		await user.save();
-
-		const verifyEmailUrl = router
-			.builder()
-			.prefixUrl(env.get('APP_URL'))
-			.params({ email: user.email })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			});
+		const verifyEmailService = new VerifyEmailService();
+		const user = await UserFactory.create();
+		const token = await verifyEmailService.generateToken(user);
 
 		timeTravel('1d');
 
-		const page = await visit(verifyEmailUrl);
+		const page = await visit(route('auth.verify-email', { token }));
 
 		await page.waitForURL(route('auth.login'));
 		await page.waitForSelector('.toast[data-type="error"]');
 
-		await page.assertVisible(page.getByText('Invalid or expired verification link'));
+		await page.assertVisible(page.getByText('Invalid or expired verify email token'));
 
 		hash.restore();
 	});
 
-	test('Show error notification when verifying email with unknown email', async ({ visit, route }) => {
-		const verifyEmailUrl = router
-			.builder()
-			.prefixUrl(env.get('APP_URL'))
-			.params({ email: 'wrong@email.fr' })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			});
-		const page = await visit(verifyEmailUrl);
-
-		await page.waitForURL(route('auth.login'));
-		await page.waitForSelector('.toast[data-type="error"]');
-
-		await page.assertVisible(page.getByText('User not found'));
-	});
-
-	test('Show error notification when verifying email with verified user', async ({ visit, route }) => {
+	test('Verify email with old token page show error message and redirects to /login', async ({ visit, route }) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: true,
-		});
+		const verifyEmailService = new VerifyEmailService();
+		const user = await UserFactory.create();
+		const token = await verifyEmailService.generateToken(user);
 
-		await user.save();
+		await verifyEmailService.generateToken(user);
 
-		const verifyEmailUrl = router
-			.builder()
-			.prefixUrl(env.get('APP_URL'))
-			.params({ email: user.email })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			});
-		const page = await visit(verifyEmailUrl);
+		const page = await visit(route('auth.verify-email', { token }));
 
 		await page.waitForURL(route('auth.login'));
 		await page.waitForSelector('.toast[data-type="error"]');
 
-		await page.assertVisible(page.getByText('Your email has already been verified'));
+		await page.assertVisible(page.getByText('Invalid or expired verify email token'));
 
 		hash.restore();
 	});
 
-	test('Show success notification when verifying email with valid signature', async ({ visit, route }) => {
+	test('Verify email with used token page show error message and redirects to /login', async ({
+		client,
+		visit,
+		route,
+	}) => {
 		hash.fake();
 
-		const user = await User.create({
-			email: 'test@test.fr',
-			password: 'Test123!',
-			isVerified: false,
-		});
+		const verifyEmailService = new VerifyEmailService();
+		const user = await UserFactory.create();
+		const token = await verifyEmailService.generateToken(user);
 
-		await user.save();
+		await client.post(route('auth.verify-email', { token })).withCsrfToken().withInertia();
 
-		const verifyEmailUrl = router
-			.builder()
-			.prefixUrl(env.get('APP_URL'))
-			.params({ email: user.email })
-			.makeSigned('auth.verify-email', {
-				expiresIn: '1d',
-				purpose: 'verify-email',
-			});
-		const page = await visit(verifyEmailUrl);
+		const page = await visit(route('auth.verify-email', { token }));
 
+		await page.waitForURL(route('auth.login'));
+		await page.waitForSelector('.toast[data-type="error"]');
+
+		await page.assertVisible(page.getByText('Invalid or expired verify email token'));
+
+		hash.restore();
+	});
+
+	test('Verify email with valid token page show verify email form', async ({ assert, visit, route }) => {
+		hash.fake();
+
+		const verifyEmailService = new VerifyEmailService();
+		const user = await UserFactory.create();
+		const token = await verifyEmailService.generateToken(user);
+		const page = await visit(route('auth.verify-email', { token }));
+
+		await page.assertPath(route('auth.verify-email', { token }));
+
+		const body = await page.innerHTML('#app');
+
+		assert.snapshot(body.trim()).match();
+
+		hash.restore();
+	});
+
+	test('Show confirmation message when clicking verify button', async ({ visit, route }) => {
+		hash.fake();
+
+		const verifyEmailService = new VerifyEmailService();
+		const user = await UserFactory.create();
+		const token = await verifyEmailService.generateToken(user);
+		const page = await visit(route('auth.verify-email', { token }));
+
+		await page.getByRole('button', { name: 'Verify Email' }).click();
 		await page.waitForURL(route('auth.login'));
 		await page.waitForSelector('.toast[data-type="success"]');
 
@@ -171,7 +147,7 @@ test.group('Auth verify email', (group) => {
 		await page.getByRole('button', { name: 'Resend email' }).click();
 		await page.waitForNavigation();
 
-		mails.assertSent(VerifyEmailNotification);
+		mails.assertQueued(VerifyEmailNotification);
 
 		hash.restore();
 	});
